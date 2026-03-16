@@ -6,3 +6,5 @@ coverage
 .prisma
 *.db
 *.db-journal
+prisma/*.db
+prisma/*.db-journal
