@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -19,7 +19,7 @@ model Tour {
   isPrivate     Boolean  @default(true)
   isFeatured    Boolean  @default(false)
   isActive      Boolean  @default(true)
-  highlights    String
+  highlights    Json
   imageUrl      String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -37,7 +37,7 @@ model Attraction {
   entranceFee           Decimal?
   latitude              Float?
   longitude             Float?
-  tags                  String
+  tags          Json
   imageUrl              String?
   isActive              Boolean  @default(true)
   createdAt             DateTime @default(now())
@@ -72,11 +72,11 @@ model Enquiry {
   tripLengthDays    Int?
   travelStyle       String?
   pace              String?
-  interests         String?
-  mustSee           String?
+  interests     Json?
+  mustSee       Json?
   accommodationArea String?
   aiSummary         String?
-  itineraryJson     String?
+  itineraryJson Json?
   consultantNotes   String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

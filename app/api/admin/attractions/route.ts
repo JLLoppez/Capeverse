@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       estimatedVisitMinutes: Number(formData.get('estimatedVisitMinutes') || 60),
       entranceFee: String(formData.get('entranceFee') || '') ? String(formData.get('entranceFee')) : null,
       imageUrl: String(formData.get('imageUrl') || '') || null,
-      tags: JSON.stringify(String(formData.get('tags') || '').split(',').map((i) => i.trim()).filter(Boolean)),
+      tags: String(formData.get('tags') || '').split(',').map((i) => i.trim()).filter(Boolean),
       isActive: true
     }
   });
