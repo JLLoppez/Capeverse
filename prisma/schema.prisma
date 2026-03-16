@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Tour {
+  id            String   @id @default(cuid())
+  title         String
+  slug          String   @unique
+  summary       String
+  description   String
+  durationType  String
+  priceFrom     Decimal
+  category      String
+  isPrivate     Boolean  @default(true)
+  isFeatured    Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  highlights    String
+  imageUrl      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  stops         TourStop[]
+}
+
+model Attraction {
+  id                    String   @id @default(cuid())
+  name                  String
+  slug                  String   @unique
+  region                String
+  shortDescription      String
+  fullDescription       String
+  estimatedVisitMinutes Int
+  entranceFee           Decimal?
+  latitude              Float?
+  longitude             Float?
+  tags                  String
+  imageUrl              String?
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  tourStops             TourStop[]
+}
+
+model TourStop {
+  id                   String     @id @default(cuid())
+  tour                 Tour       @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  tourId               String
+  attraction           Attraction @relation(fields: [attractionId], references: [id], onDelete: Cascade)
+  attractionId         String
+  stopOrder            Int
+  suggestedStopMinutes Int?
+
+  @@unique([tourId, attractionId])
+}
+
+model Enquiry {
+  id                String   @id @default(cuid())
+  fullName          String
+  email             String
+  phone             String?
+  nationality       String?
+  travelDate        DateTime?
+  groupSize         Int?
+  budgetRange       String?
+  message           String?
+  source            String   @default("website")
+  status            String   @default("New")
+  tripLengthDays    Int?
+  travelStyle       String?
+  pace              String?
+  interests         String?
+  mustSee           String?
+  accommodationArea String?
+  aiSummary         String?
+  itineraryJson     String?
+  consultantNotes   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
