@@ -1,36 +1,36 @@
 import Link from 'next/link';
-import { Decimal } from '@prisma/client/runtime/library';
+import { ArrowRight } from 'lucide-react';
 
 type Attraction = {
-  id: string;
-  name: string;
-  slug: string;
-  region: string;
-  shortDescription: string;
-  imageUrl: string | null;
-  entranceFee: Decimal | null;
+  id: string; name: string; slug: string; region: string;
+  shortDescription: string; imageUrl: string | null; entranceFee: any;
 };
 
 export function AttractionCard({ attraction }: { attraction: Attraction }) {
   return (
-    <div className="card">
-      {attraction.imageUrl ? (
-        <img src={attraction.imageUrl} alt={attraction.name} className="card-image" />
-      ) : (
-        <div className="card-image" style={{background:'linear-gradient(135deg,#e8f5f0,#d0ebe3)',display:'grid',placeItems:'center'}}>
-          <span style={{fontSize:'2rem'}}>📍</span>
+    <Link href={`/attractions/${attraction.slug}`} style={{display:'block',textDecoration:'none'}}>
+      <div className="card" style={{cursor:'pointer'}}>
+        <div className="card-image-wrap">
+          {attraction.imageUrl ? (
+            <img src={attraction.imageUrl} alt={attraction.name} className="card-image" style={{width:'100%',height:'210px',objectFit:'cover'}} />
+          ) : (
+            <div style={{width:'100%',height:'210px',background:'var(--surface-3)',display:'grid',placeItems:'center'}}>
+              <span style={{color:'var(--text-faint)',fontSize:'2rem'}}>📍</span>
+            </div>
+          )}
         </div>
-      )}
-      <div className="card-body">
-        <div>
-          <span style={{display:'inline-flex',alignItems:'center',padding:'0.25rem 0.65rem',borderRadius:'999px',fontSize:'0.75rem',fontWeight:600,background:'rgba(10,102,72,0.08)',color:'var(--brand)',border:'1px solid rgba(10,102,72,0.12)'}}>
-            {attraction.region}
-          </span>
+        <div className="card-body">
+          <span className="pill">{attraction.region}</span>
+          <h3 style={{color:'var(--text)',fontSize:'1.1rem'}}>{attraction.name}</h3>
+          <p style={{fontSize:'0.82rem',overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{attraction.shortDescription}</p>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:'0.75rem',borderTop:'1px solid var(--line)',marginTop:'0.25rem'}}>
+            <div style={{fontSize:'0.68rem',letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--text-faint)'}}>
+              {attraction.entranceFee && Number(attraction.entranceFee) > 0 ? `From R ${Number(attraction.entranceFee)}` : 'Free entry'}
+            </div>
+            <ArrowRight size={15} style={{color:'var(--gold)'}} />
+          </div>
         </div>
-        <h3 style={{margin:'0.5rem 0 0.35rem'}}>{attraction.name}</h3>
-        <p style={{color:'var(--muted)',fontSize:'0.88rem',margin:0}}>{attraction.shortDescription}</p>
-        <Link href={`/attractions/${attraction.slug}`} className="button" style={{marginTop:'0.75rem',width:'100%'}}>View attraction</Link>
       </div>
-    </div>
+    </Link>
   );
 }
