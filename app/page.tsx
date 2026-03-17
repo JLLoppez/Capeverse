@@ -1,6 +1,4 @@
 import Link from 'next/link';
-import { Analytics } from "@vercel/analytics/next"
-import { SpeedInsights } from "@vercel/speed-insights/next"
 import { prisma } from '@/lib/prisma';
 import { TourCard } from '@/components/TourCard';
 import { AttractionCard } from '@/components/AttractionCard';
