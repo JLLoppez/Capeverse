@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   if (!allowed) {
     const retryAfterSecs = Math.ceil(retryAfterMs / 1000);
     return NextResponse.redirect(
-      new URL(`/admin/login?error=too-many-attempts&retry=${retryAfterSecs}`, request.url),
+      new URL(`/login?error=too-many-attempts&retry=${retryAfterSecs}`, request.url),
       303
     );
   }
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   const password = String(formData.get('password') || '');
 
   if (email !== process.env.ADMIN_EMAIL || password !== process.env.ADMIN_PASSWORD) {
-    return NextResponse.redirect(new URL('/admin/login?error=1', request.url), 303);
+    return NextResponse.redirect(new URL('/login?error=1', request.url), 303);
   }
 
   // Successful login — clear rate limit bucket for this IP

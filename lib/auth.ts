@@ -53,7 +53,7 @@ export async function isAdminAuthenticated() {
 
 export async function requireAdmin() {
   const authed = await isAdminAuthenticated();
-  if (!authed) redirect('/admin/login');
+  if (!authed) redirect('/login');
 }
 
 export function getAdminCookieName() {
