@@ -24,6 +24,7 @@ model Tour {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   stops        TourStop[]
+  bookings     Booking[]
 }
 
 model Attraction {
@@ -80,4 +81,37 @@ model Enquiry {
   consultantNotes   String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+}
+
+model AdminSetup {
+  id          String   @id
+  email       String   @unique
+  passwordHash String
+  completedAt DateTime
+  createdAt   DateTime @default(now())
+}
+
+model Booking {
+  id              String   @id @default(cuid())
+  tourId          String
+  stripeSessionId String   @unique
+  customerName    String
+  customerEmail   String
+  travelDate      DateTime?
+  groupSize       Int
+  amountZar       Int
+  status          String   @default("Confirmed")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  tour            Tour     @relation(fields: [tourId], references: [id])
+}
+
+model PageView {
+  id        String   @id @default(cuid())
+  path      String
+  referrer  String?
+  createdAt DateTime @default(now())
+
+  @@index([path])
+  @@index([createdAt])
 }

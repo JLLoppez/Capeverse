@@ -1,6 +1,6 @@
 {
-  "name": "cape-compass",
-  "version": "1.0.0",
+  "name": "capiverse",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1 --port 3000",
@@ -9,13 +9,20 @@
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:all": "npm test && npm run test:e2e",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:push": "prisma db push",
-    "seed": "tsx prisma/seed.ts"
+    "prisma:studio": "prisma studio",
+    "seed": "tsx prisma/seed.ts",
+    "setup": "prisma migrate deploy && npm run seed"
   },
   "dependencies": {
     "@prisma/client": "^6.5.0",
+    "@sentry/nextjs": "^8.0.0",
     "@vercel/analytics": "^2.0.1",
     "lucide-react": "^0.577.0",
     "next": "^16.1.6",
@@ -23,9 +30,11 @@
     "openai": "^4.91.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "stripe": "^16.0.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.44.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.13.10",
     "@types/nodemailer": "^6.4.17",
