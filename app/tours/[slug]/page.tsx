@@ -11,6 +11,11 @@ export default async function TourDetailPage({ params }: { params: Promise<{ slu
       stops: {
         include: { attraction: true },
         orderBy: { stopOrder: 'asc' }
+      },
+      availability: {
+        where: { blockedDate: { gte: new Date() } },
+        orderBy: { blockedDate: 'asc' },
+        take: 6,
       }
     }
   });
@@ -18,6 +23,9 @@ export default async function TourDetailPage({ params }: { params: Promise<{ slu
   if (!tour) notFound();
 
   const highlights = Array.isArray(tour.highlights) ? (tour.highlights as string[]) : [];
+  const zarPrice = Number(tour.priceFrom);
+  const approxEur = Math.round(zarPrice * 0.050);
+  const approxGbp = Math.round(zarPrice * 0.043);
 
   return (
     <section className="section">
@@ -28,8 +36,17 @@ export default async function TourDetailPage({ params }: { params: Promise<{ slu
           <p className="lead">{tour.description}</p>
           <div className="pill-row">
             <span className="pill">{tour.durationType}</span>
-            <span className="pill">From {currency(Number(tour.priceFrom))}</span>
+            <span className="pill">From {currency(zarPrice)}</span>
             <span className="pill">{tour.isPrivate ? 'Private tour' : 'Shared tour'}</span>
+          </div>
+
+          {/* Multi-currency price hint */}
+          <div style={{ marginBottom: '1.5rem', padding: '0.85rem 1.1rem', background: 'rgba(14,77,100,0.05)', borderRadius: '10px', fontSize: '0.85rem', color: 'var(--text-muted)', border: '1px solid rgba(14,77,100,0.1)' }}>
+            <strong>Price guide:</strong> From {currency(zarPrice)} per person &nbsp;·&nbsp;
+            ≈ €{approxEur.toLocaleString()} &nbsp;·&nbsp; ≈ £{approxGbp.toLocaleString()}
+            <span style={{ display: 'block', fontSize: '0.72rem', marginTop: '0.25rem', color: 'var(--text-faint)' }}>
+              Approximate conversions — final invoice in ZAR at time of booking.
+            </span>
           </div>
 
           <div className="panel section-stack">
@@ -51,6 +68,14 @@ export default async function TourDetailPage({ params }: { params: Promise<{ slu
               ))}
             </ol>
           </div>
+
+          {/* Upcoming blocked dates warning */}
+          {tour.availability.length > 0 && (
+            <div style={{ marginBottom: '1.5rem', padding: '0.85rem 1.1rem', background: 'rgba(220,38,38,0.04)', border: '1px solid rgba(220,38,38,0.15)', borderRadius: '10px', fontSize: '0.85rem' }}>
+              <strong style={{ color: '#dc2626' }}>Limited availability:</strong> Some upcoming dates are fully booked.
+              Please contact us to confirm your preferred date before booking.
+            </div>
+          )}
 
           <div className="cta-row">
             <Link href="/enquiry" className="button">

@@ -11,12 +11,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const formData = await request.formData();
   const status = String(formData.get('status') || 'New');
   const consultantNotes = String(formData.get('consultantNotes') || '');
+  const followUpNote = String(formData.get('followUpNote') || '') || null;
+  const followUpDateRaw = String(formData.get('followUpDate') || '').trim();
+  const followUpDate = followUpDateRaw ? new Date(followUpDateRaw) : null;
 
   const enquiry = await prisma.enquiry.update({
     where: { id },
     data: {
       status,
-      consultantNotes
+      consultantNotes,
+      followUpDate,
+      followUpNote,
     }
   });
 

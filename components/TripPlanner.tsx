@@ -7,6 +7,8 @@ type Attraction = {
   name: string;
   slug: string;
   region: string;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 type PlannerProps = {

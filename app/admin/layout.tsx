@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth';
-import { LayoutDashboard, Map, MapPin, MessageCircle, ArrowLeft, LogOut } from 'lucide-react';
+import { LayoutDashboard, Map, MapPin, MessageCircle, ArrowLeft, LogOut, CreditCard } from 'lucide-react';
 
 const navItems = [
-  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { label: 'Tours', href: '/admin/tours', icon: Map },
-  { label: 'Attractions', href: '/admin/attractions', icon: MapPin },
-  { label: 'Enquiries', href: '/admin/enquiries', icon: MessageCircle },
+  { label: 'Dashboard',   href: '/admin',              icon: LayoutDashboard },
+  { label: 'Enquiries',   href: '/admin/enquiries',    icon: MessageCircle },
+  { label: 'Bookings',    href: '/admin/bookings',     icon: CreditCard },
+  { label: 'Tours',       href: '/admin/tours',        icon: Map },
+  { label: 'Attractions', href: '/admin/attractions',  icon: MapPin },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -25,6 +25,7 @@ model Tour {
   updatedAt    DateTime   @updatedAt
   stops        TourStop[]
   bookings     Booking[]
+  availability TourAvailability[]
 }
 
 model Attraction {
@@ -77,10 +78,28 @@ model Enquiry {
   mustSee           Json?
   accommodationArea String?
   aiSummary         String?
+  aiChatSummary     String?
   itineraryJson     Json?
   consultantNotes   String?
+  followUpDate      DateTime?
+  followUpNote      String?
+  convertedToBookingId String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+}
+
+model TourAvailability {
+  id          String   @id @default(cuid())
+  tourId      String
+  blockedDate DateTime @db.Date
+  reason      String?
+  maxCapacity Int?
+  createdAt   DateTime @default(now())
+  tour        Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  @@unique([tourId, blockedDate])
+  @@index([tourId])
+  @@index([blockedDate])
 }
 
 model AdminSetup {

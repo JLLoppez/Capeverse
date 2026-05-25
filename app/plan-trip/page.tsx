@@ -26,7 +26,7 @@ function PlannerSkeleton() {
 async function PlannerLoader() {
   const attractions = await prisma.attraction.findMany({
     where: { isActive: true },
-    select: { id: true, name: true, slug: true, region: true },
+    select: { id: true, name: true, slug: true, region: true, latitude: true, longitude: true },
     orderBy: { name: 'asc' }
   });
   return <TripPlanner attractions={attractions} />;
