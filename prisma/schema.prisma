@@ -25,7 +25,7 @@ model Tour {
   updatedAt    DateTime   @updatedAt
   stops        TourStop[]
   bookings     Booking[]
-  availability TourAvailability[]
+  reviews      Review[]
 }
 
 model Attraction {
@@ -78,51 +78,35 @@ model Enquiry {
   mustSee           Json?
   accommodationArea String?
   aiSummary         String?
-  aiChatSummary     String?
   itineraryJson     Json?
+  itineraryToken    String?   // links back to a SavedItinerary
   consultantNotes   String?
-  followUpDate      DateTime?
-  followUpNote      String?
-  convertedToBookingId String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }
 
-model TourAvailability {
-  id          String   @id @default(cuid())
-  tourId      String
-  blockedDate DateTime @db.Date
-  reason      String?
-  maxCapacity Int?
-  createdAt   DateTime @default(now())
-  tour        Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
-
-  @@unique([tourId, blockedDate])
-  @@index([tourId])
-  @@index([blockedDate])
-}
-
 model AdminSetup {
-  id          String   @id
-  email       String   @unique
+  id           String   @id
+  email        String   @unique
   passwordHash String
-  completedAt DateTime
-  createdAt   DateTime @default(now())
+  completedAt  DateTime
+  createdAt    DateTime @default(now())
 }
 
 model Booking {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   tourId          String
-  stripeSessionId String   @unique
+  stripeSessionId String    @unique
   customerName    String
   customerEmail   String
   travelDate      DateTime?
   groupSize       Int
   amountZar       Int
-  status          String   @default("Confirmed")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  tour            Tour     @relation(fields: [tourId], references: [id])
+  status          String    @default("Confirmed")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  tour            Tour      @relation(fields: [tourId], references: [id])
+  reviewRequested Boolean   @default(false)
 }
 
 model PageView {
@@ -133,4 +117,67 @@ model PageView {
 
   @@index([path])
   @@index([createdAt])
+}
+
+// ── New: saved itinerary with share token ────────────────────────────────────
+model SavedItinerary {
+  id             String   @id @default(cuid())
+  token          String   @unique @default(cuid())
+  itineraryJson  Json     // full result from /api/itinerary/generate
+  inputJson      Json     // the original PlannerInput so it can be re-run
+  days           Int
+  budget         String
+  pace           String
+  groupType      String
+  interests      Json     // string[]
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime // 90 days from creation
+
+  @@index([token])
+  @@index([createdAt])
+}
+
+// ── New: post-booking review ─────────────────────────────────────────────────
+model Review {
+  id          String   @id @default(cuid())
+  tourId      String
+  bookingId   String?  // optional — link back to the booking
+  reviewToken String   @unique @default(cuid()) // emailed to customer
+  rating      Int?     // 1-5, null until submitted
+  body        String?
+  authorName  String?
+  approved    Boolean  @default(false)
+  submittedAt DateTime?
+  createdAt   DateTime @default(now())
+  tour        Tour     @relation(fields: [tourId], references: [id])
+
+  @@index([tourId])
+  @@index([reviewToken])
+}
+
+// ── New: funnel event tracking ───────────────────────────────────────────────
+model FunnelEvent {
+  id        String   @id @default(cuid())
+  event     String   // viewed_tour | started_planner | generated_itinerary | saved_itinerary | submitted_enquiry | completed_booking
+  sessionId String?
+  tourId    String?
+  path      String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([event])
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+// ── Operator availability: blocked dates and capacity limits ─────────────────
+model OperatorAvailability {
+  id        String   @id @default(cuid())
+  date      DateTime @db.Date
+  maxGroups Int      @default(0)  // 0 = fully blocked
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@unique([date])
+  @@index([date])
 }

@@ -1,16 +1,14 @@
-/**
- * AI recommendation helper — server-side only.
- * Fix: removed top-level `import OpenAI`. OpenAI is now dynamically imported
- * only when the API key is present, preventing build crash when package is absent.
- */
-
+import OpenAI from 'openai';
 import { prisma } from '@/lib/prisma';
-import { rankAttractions, buildDayGroups, type PlannerInput } from '@/lib/scoring';
+import { rankAttractions, buildDayGroups, checkFeasibility, type PlannerInput } from '@/lib/scoring';
 
 export type { PlannerInput };
 
 export async function generateRecommendation(input: PlannerInput) {
-  const attractions = await prisma.attraction.findMany({ where: { isActive: true } });
+  const attractions = await prisma.attraction.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true, slug: true, region: true, tags: true, estimatedVisitMinutes: true },
+  });
 
   const attractionStubs = attractions.map((a) => ({
     id: a.id,
@@ -18,54 +16,65 @@ export async function generateRecommendation(input: PlannerInput) {
     slug: a.slug,
     region: a.region,
     tags: Array.isArray(a.tags) ? (a.tags as string[]) : [],
-    latitude: a.latitude ?? null,
-    longitude: a.longitude ?? null,
+    estimatedVisitMinutes: a.estimatedVisitMinutes ?? 60,
   }));
 
+  // FIX: interests are now passed correctly from the caller
   const scored = rankAttractions(attractionStubs, input);
-  const grouped = buildDayGroups(scored, input.days);
+  const grouped = buildDayGroups(scored, input.days, input.pace);
+  const feasibility = checkFeasibility(scored, input.days, input.pace);
 
-  const fallbackText =
-    `Based on your ${input.days}-day trip, ${input.groupType} travel style, and interests in ` +
-    `${input.interests.join(', ')}, I'd recommend focusing on ` +
-    `${scored.slice(0, 3).map((s) => s.attraction.name).join(', ')}. ` +
-    `This gives you a balanced Cape Town experience without overloading the day.`;
+  const topNames = grouped.flatMap((g) => g.items.slice(0, 2).map((i) => i.attraction.name));
 
-  const makeResult = (summary: string) => ({
-    summary,
-    days: grouped.map((group) => ({
-      day: group.day,
-      title: group.title,
-      stops: group.items.map((item) => ({
-        name: item.attraction.name,
-        reason: 'Matches your interests and fits a practical Cape Town route.',
-        region: item.attraction.region,
+  const fallbackText = `Based on your ${input.days}-day trip, ${input.groupType} travel style, and interests in ${input.interests.join(', ')}, I'd recommend focusing on ${topNames.slice(0, 3).join(', ')}. This gives you a balanced Cape Town experience without overloading the day.`;
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return {
+      summary: fallbackText,
+      warnings: feasibility.warnings,
+      days: grouped.map((group) => ({
+        day: group.day,
+        title: group.title,
+        stops: group.items.map((item) => ({
+          name: item.attraction.name,
+          reason: `Matches your interests and fits a practical Cape Town route.`,
+          region: item.attraction.region,
+        })),
       })),
-    })),
-  });
+    };
+  }
 
-  if (!process.env.OPENAI_API_KEY) return makeResult(fallbackText);
+  const client = new OpenAI({ apiKey });
+  const prompt = `You are a premium Cape Town travel planner. Create a concise personalised recommendation.
+Input: ${JSON.stringify(input)}
+Candidate attractions (geographically clustered, time-budgeted): ${JSON.stringify(grouped.map((g) => ({ day: g.day, title: g.title, stops: g.items.map((i) => ({ name: i.attraction.name, region: i.attraction.region, tags: i.attraction.tags })) })))}
+${feasibility.warnings.length > 0 ? `Warnings: ${feasibility.warnings.join(' | ')}` : ''}
+Return JSON only (no markdown) with keys: summary, days [{day, title, stops:[{name, reason, region}]}]. Be specific to this traveller's interests and group type.`;
 
   try {
-    const { default: OpenAI } = await import('openai');
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-    const prompt =
-      `You are a premium Cape Town travel planner. Create a concise personalized recommendation.\n` +
-      `Input: ${JSON.stringify(input)}\n` +
-      `Candidate attractions: ${JSON.stringify(scored.map((s) => ({ name: s.attraction.name, region: s.attraction.region, tags: s.attraction.tags })))}\n` +
-      `Return JSON only (no markdown) with keys: summary, days [{day,title,stops:[{name,reason,region}]}]. Keep it practical and realistic.`;
-
     const response = await client.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 1200,
       response_format: { type: 'json_object' },
     });
-
     const text = response.choices[0]?.message?.content ?? '';
-    return JSON.parse(text);
+    const parsed = JSON.parse(text);
+    return { ...parsed, warnings: feasibility.warnings };
   } catch {
-    return makeResult(fallbackText);
+    return {
+      summary: fallbackText,
+      warnings: feasibility.warnings,
+      days: grouped.map((group) => ({
+        day: group.day,
+        title: group.title,
+        stops: group.items.map((item) => ({
+          name: item.attraction.name,
+          reason: `Matches your interests and fits a practical Cape Town route.`,
+          region: item.attraction.region,
+        })),
+      })),
+    };
   }
 }

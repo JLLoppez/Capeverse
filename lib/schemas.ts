@@ -41,7 +41,13 @@ export const ItineraryGenerateSchema = z.object({
   days: z.number().int().min(1).max(14),
   budget: z.enum(['Budget', 'Mid-range', 'Premium', 'Luxury']).default('Mid-range'),
   pace: z.enum(['Relaxed', 'Balanced', 'Packed']).default('Balanced'),
-  groupType: z.string().max(60).default('Couple')
+  groupType: z.string().max(60).default('Couple'),
+  // Now required — the scoring engine needs these to rank meaningfully
+  interests: z
+    .array(z.string().max(60))
+    .min(1, 'Select at least one interest')
+    .max(10)
+    .default(['scenic']),
 });
 
 export type ItineraryGenerateInput = z.infer<typeof ItineraryGenerateSchema>;

@@ -3,6 +3,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
 
 export const metadata: Metadata = {
   title: "Capiverse — The Universe of Cape Town Experiences",
@@ -17,6 +18,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main>{children}</main>
         <SiteFooter />
         <Analytics />
+        <WhatsAppButton
+          variant="fixed"
+          phone={process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}
+          message="Hi! I'd love to find out more about a private Cape Town tour."
+        />
       </body>
     </html>
   );

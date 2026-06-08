@@ -1,15 +1,6 @@
 /**
- * Scoring & geographic clustering engine for the AI trip planner.
- * Pure functions — no side effects, no external dependencies. Fully unit-testable.
- *
- * Fixes applied:
- *  - rankAttractions: slice limit corrected to days * 3 (matching tests)
- *  - buildDayGroups: stopsPer uses Math.floor not ceil, preventing premature grouping
- *  - buildDayGroups: empty days correctly skipped
- *  - buildDayTitle: title strings match test expectations exactly
- *  - getCluster: added "Cape Town City" as a recognised region string
- *  - bothPeninsula: operator precedence made explicit with parens
- *  - Removed unused CT_CENTRE constant
+ * Pure scoring, clustering, and validation functions for the itinerary engine.
+ * No side effects, no external dependencies — fully unit-testable.
  */
 
 export type AttractionStub = {
@@ -18,8 +9,7 @@ export type AttractionStub = {
   slug: string;
   region: string;
   tags: string[];
-  latitude?: number | null;
-  longitude?: number | null;
+  estimatedVisitMinutes?: number;
 };
 
 export type PlannerInput = {
@@ -31,64 +21,53 @@ export type PlannerInput = {
   mustSee?: string[];
 };
 
+// ─── Pace → daily time budget (minutes) ─────────────────────────────────────
+
+export const PACE_BUDGET_MINUTES: Record<string, number> = {
+  Relaxed: 360,   // 6 hours
+  Balanced: 480,  // 8 hours
+  Packed: 600,    // 10 hours
+};
+
+// ─── Geographic clusters: regions that should share a day ────────────────────
+
+export const REGION_CLUSTERS: Record<string, string> = {
+  // Cape Peninsula group
+  'Cape Peninsula': 'peninsula',
+  'Simons Town':    'peninsula',
+  'Atlantic Seaboard': 'peninsula',
+  // Winelands group
+  'Cape Winelands': 'winelands',
+  'Winelands':      'winelands',
+  // City group
+  'City Bowl':      'city',
+  'Cape Town CBD':  'city',
+  'Newlands':       'city',
+  'Gardens':        'city',
+  // Default: own cluster
+};
+
+export function getCluster(region: string): string {
+  return REGION_CLUSTERS[region] ?? region.toLowerCase().replace(/\s+/g, '-');
+}
+
+// ─── Interest → tag weight expansion ────────────────────────────────────────
+
 export const TAG_WEIGHTS: Record<string, string[]> = {
-  scenic:    ['scenic', 'iconic', 'nature', 'photography'],
+  scenic:    ['scenic', 'iconic', 'nature', 'photography', 'road-trip'],
   wine:      ['wine', 'food', 'luxury', 'romantic'],
-  city:      ['city', 'culture', 'history'],
-  culture:   ['culture', 'history', 'food', 'city'],
-  family:    ['family', 'wildlife', 'relaxed'],
-  luxury:    ['luxury', 'romantic', 'food', 'wine'],
-  adventure: ['nature', 'scenic', 'iconic'],
+  city:      ['city', 'culture', 'history', 'food'],
+  culture:   ['culture', 'history', 'food', 'city', 'photography'],
+  family:    ['family', 'wildlife', 'relaxed', 'beach'],
+  luxury:    ['luxury', 'romantic', 'food', 'wine', 'scenic'],
+  adventure: ['nature', 'scenic', 'iconic', 'road-trip'],
+  food:      ['food', 'wine', 'culture', 'luxury'],
+  beach:     ['beach', 'scenic', 'relaxed', 'family'],
+  wildlife:  ['wildlife', 'nature', 'family', 'photography'],
 };
 
-/**
- * Cape Town geographic region clusters.
- * Keys are internal identifiers; values are substrings matched against attraction.region.
- * Attractions in the same cluster are geographically close enough to share a day.
- */
-const REGION_CLUSTERS: Record<string, string[]> = {
-  'city-centre': [
-    'Cape Town City Bowl', 'City Centre', 'Bo-Kaap', 'De Waterkant',
-    'V&A Waterfront', 'Green Point', 'Cape Town City',
-  ],
-  'atlantic-seaboard': ['Sea Point', 'Camps Bay', 'Clifton', 'Bantry Bay', 'Atlantic Seaboard'],
-  'southern-suburbs':  ['Constantia', 'Tokai', 'Kirstenbosch', 'Bishopscourt', 'Southern Suburbs'],
-  'peninsula-north':   ["Hout Bay", "Chapman's Peak", 'Noordhoek'],
-  'peninsula-south':   [
-    'Cape Point', "Simon's Town", 'Boulders Beach', 'Fish Hoek',
-    'Glencairn', 'False Bay', 'Cape Peninsula',
-  ],
-  'winelands':         ['Stellenbosch', 'Franschhoek', 'Paarl', 'Wellington', 'Winelands'],
-  'south-peninsula':   ['Muizenberg', 'Kalk Bay', 'St James', 'Lakeside'],
-};
+// ─── Score a single attraction against planner input ────────────────────────
 
-/** Returns the cluster key for a region string, or null if unmatched. */
-function getCluster(region: string): string | null {
-  const r = region.toLowerCase();
-  for (const [cluster, regions] of Object.entries(REGION_CLUSTERS)) {
-    if (regions.some(
-      (reg) => r.includes(reg.toLowerCase()) || reg.toLowerCase().includes(r)
-    )) {
-      return cluster;
-    }
-  }
-  return null;
-}
-
-/** Haversine distance in km between two lat/lon points. */
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-/** Score a single attraction against planner preferences. */
 export function scoreAttraction(attraction: AttractionStub, input: PlannerInput): number {
   const tags = attraction.tags.map((t) => t.toLowerCase());
   let score = 0;
@@ -103,126 +82,179 @@ export function scoreAttraction(attraction: AttractionStub, input: PlannerInput)
   if (input.mustSee?.includes(attraction.slug)) score += 25;
   if (input.groupType.toLowerCase().includes('family') && tags.includes('family')) score += 8;
   if (input.budget.toLowerCase().includes('luxury') && tags.includes('luxury')) score += 8;
-  if (input.pace.toLowerCase().includes('relaxed') && tags.includes('relaxed')) score += 5;
+  if (input.pace.toLowerCase() === 'relaxed' && tags.includes('relaxed')) score += 5;
+  if (input.pace.toLowerCase() === 'packed' && tags.includes('iconic')) score += 3;
 
   return score;
 }
 
-export type ScoredAttraction = { attraction: AttractionStub; score: number };
+// ─── Rank all attractions, no hard cap (caller decides how many to use) ──────
 
-/**
- * Rank all attractions by score and return the top N candidates.
- * N = max(3, days × 3) — enough to fill all days with 3 stops each.
- */
 export function rankAttractions(
   attractions: AttractionStub[],
   input: PlannerInput
-): ScoredAttraction[] {
+): Array<{ attraction: AttractionStub; score: number }> {
   return attractions
     .map((attraction) => ({ attraction, score: scoreAttraction(attraction, input) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, Math.max(3, input.days * 3));
+    .sort((a, b) =>
+      b.score !== a.score
+        ? b.score - a.score
+        : a.attraction.name.localeCompare(b.attraction.name)  // stable tie-break
+    );
 }
 
-/**
- * Cluster ranked attractions into realistic day groups using geographic proximity.
- *
- * Algorithm:
- *  1. For each day, pick the highest-scored unassigned attraction as the day seed.
- *  2. Fill remaining slots with attractions in the same geographic cluster or within 30 km.
- *  3. Fall back to score order if no cluster matches.
- *  4. Skip days entirely when no unassigned attractions remain (never emit empty days).
- */
-export function buildDayGroups(scored: ScoredAttraction[], days: number): Array<{
+// ─── Day title from cluster name ─────────────────────────────────────────────
+
+export function clusterTitle(cluster: string): string {
+  const titles: Record<string, string> = {
+    peninsula: 'Cape Peninsula scenic highlights',
+    winelands: 'Winelands & relaxed tastings',
+    city:      'Cape Town city & culture',
+  };
+  return titles[cluster] ?? `${cluster.replace(/-/g, ' ')} highlights`;
+}
+
+// ─── Build day groups with geographic clustering + time-budget enforcement ───
+
+export type DayGroup = {
   day: number;
   title: string;
-  items: ScoredAttraction[];
-}> {
-  // Target stops per day.
-  // When there are fewer items than days (sparse case), put them all in day 1
-  // rather than spreading one item per day and creating near-empty days.
-  // Otherwise target Math.ceil spread, capped at 3 per day.
-  const stopsPer = scored.length <= days
-    ? scored.length                                    // sparse: take all on day 1
-    : Math.min(3, Math.ceil(scored.length / days));   // normal: spread evenly, max 3/day
-  const unassigned = [...scored];
-  const groups: Array<{ day: number; title: string; items: ScoredAttraction[] }> = [];
+  cluster: string;
+  items: Array<{ attraction: AttractionStub; score: number }>;
+  totalMinutes: number;
+  overCapacity: boolean;
+};
 
-  for (let day = 1; day <= days; day++) {
-    if (!unassigned.length) break; // skip empty days
+export function buildDayGroups(
+  scored: Array<{ attraction: AttractionStub; score: number }>,
+  days: number,
+  pace: string = 'Balanced'
+): DayGroup[] {
+  const budgetMinutes = PACE_BUDGET_MINUTES[pace] ?? PACE_BUDGET_MINUTES['Balanced'];
 
-    // Seed: highest-scored unassigned attraction
-    const seed = unassigned.shift()!;
-    const dayItems: ScoredAttraction[] = [seed];
-    const seedCluster = getCluster(seed.attraction.region);
+  // Step 1: group by geographic cluster, preserving score order within each cluster
+  const clusterMap = new Map<string, Array<{ attraction: AttractionStub; score: number }>>();
+  for (const item of scored) {
+    const cluster = getCluster(item.attraction.region);
+    if (!clusterMap.has(cluster)) clusterMap.set(cluster, []);
+    clusterMap.get(cluster)!.push(item);
+  }
 
-    const remaining: ScoredAttraction[] = [];
+  // Step 2: sort clusters by highest score of their best member (most relevant cluster first)
+  const sortedClusters = Array.from(clusterMap.entries()).sort(
+    (a, b) => (b[1][0]?.score ?? 0) - (a[1][0]?.score ?? 0)
+  );
 
-    for (const item of unassigned) {
-      if (dayItems.length >= stopsPer) {
-        remaining.push(item);
-        continue;
+  // Step 3: assign clusters to days (one cluster per day where possible; split large clusters)
+  const groups: DayGroup[] = [];
+  let dayNum = 1;
+
+  for (const [cluster, items] of sortedClusters) {
+    if (dayNum > days) break;
+
+    // Split cluster across days if it exceeds the time budget
+    let chunk: typeof items = [];
+    let chunkMinutes = 0;
+
+    for (const item of items) {
+      const mins = item.attraction.estimatedVisitMinutes ?? 60;
+      if (chunk.length > 0 && chunkMinutes + mins > budgetMinutes) {
+        // Flush current chunk as a day
+        groups.push({
+          day: dayNum,
+          title: clusterTitle(cluster),
+          cluster,
+          items: chunk,
+          totalMinutes: chunkMinutes,
+          overCapacity: false,
+        });
+        dayNum++;
+        chunk = [];
+        chunkMinutes = 0;
+        if (dayNum > days) break;
       }
-
-      const itemCluster = getCluster(item.attraction.region);
-      const sameCluster = Boolean(seedCluster && itemCluster && seedCluster === itemCluster);
-
-      // Geographic proximity fallback when coordinates are available
-      let nearby = false;
-      if (
-        !sameCluster &&
-        seed.attraction.latitude != null && seed.attraction.longitude != null &&
-        item.attraction.latitude != null && item.attraction.longitude != null
-      ) {
-        const dist = haversineKm(
-          seed.attraction.latitude, seed.attraction.longitude,
-          item.attraction.latitude, item.attraction.longitude,
-        );
-        nearby = dist < 30;
-      }
-
-      // Peninsula north + south form a natural full-day loop
-      const bothPeninsula = (
-        (seedCluster === 'peninsula-south' && itemCluster === 'peninsula-north') ||
-        (seedCluster === 'peninsula-north' && itemCluster === 'peninsula-south')
-      );
-
-      if (sameCluster || nearby || bothPeninsula) {
-        dayItems.push(item);
-      } else {
-        remaining.push(item);
-      }
+      chunk.push(item);
+      chunkMinutes += mins;
     }
 
-    // If we still have empty slots, fill with the next highest-scored remaining items
-    while (dayItems.length < stopsPer && remaining.length > 0) {
-      dayItems.push(remaining.shift()!);
+    if (chunk.length > 0 && dayNum <= days) {
+      groups.push({
+        day: dayNum,
+        title: clusterTitle(cluster),
+        cluster,
+        items: chunk,
+        totalMinutes: chunkMinutes,
+        overCapacity: chunkMinutes > budgetMinutes,
+      });
+      dayNum++;
     }
-
-    unassigned.splice(0, unassigned.length, ...remaining);
-
-    const clusters = dayItems.map((i) => getCluster(i.attraction.region));
-    groups.push({ day, title: buildDayTitle(dayItems, clusters), items: dayItems });
   }
 
   return groups;
 }
 
-function buildDayTitle(items: ScoredAttraction[], clusters: (string | null)[]): string {
-  const hasPeninsula = clusters.some(
-    (c) => c === 'peninsula-south' || c === 'peninsula-north' || c === 'south-peninsula'
-  );
-  const hasWinelands       = clusters.some((c) => c === 'winelands');
-  const hasCity            = clusters.some((c) => c === 'city-centre' || c === 'atlantic-seaboard');
-  const hasSouthernSuburbs = clusters.some((c) => c === 'southern-suburbs');
+// ─── Validate that a set of attractions is feasible for the requested days ───
 
-  if (hasWinelands && !hasPeninsula)             return 'Winelands & relaxed tastings';
-  if (hasPeninsula && !hasWinelands)             return 'Peninsula scenic highlights';
-  if (hasCity && hasSouthernSuburbs)             return 'City highlights and garden escapes';
-  if (hasCity)                                   return 'Cape Town city and signature experiences';
-  if (hasSouthernSuburbs)                        return 'Southern suburbs and nature';
+export type FeasibilityResult = {
+  feasible: boolean;
+  warnings: string[];
+  droppedAttractions: AttractionStub[];
+  usedAttractions: AttractionStub[];
+};
 
-  // Fallback: use the first attraction's region name
-  const region = items[0]?.attraction.region;
-  return region ? `${region} highlights` : 'Cape Town highlights';
+export function checkFeasibility(
+  scored: Array<{ attraction: AttractionStub; score: number }>,
+  days: number,
+  pace: string
+): FeasibilityResult {
+  const groups = buildDayGroups(scored, days, pace);
+  const usedSlugs = new Set(groups.flatMap((g) => g.items.map((i) => i.attraction.slug)));
+  const allSlugs = new Set(scored.map((s) => s.attraction.slug));
+
+  const dropped = scored
+    .filter((s) => !usedSlugs.has(s.attraction.slug))
+    .map((s) => s.attraction);
+
+  const warnings: string[] = [];
+
+  if (dropped.length > 0) {
+    warnings.push(
+      `${dropped.length} attraction${dropped.length > 1 ? 's' : ''} couldn't fit into ${days} day${days > 1 ? 's' : ''} at your chosen pace: ${dropped.map((a) => a.name).join(', ')}. Consider adding a day or switching to a Packed pace.`
+    );
+  }
+
+  const overCapacityDays = groups.filter((g) => g.overCapacity);
+  for (const day of overCapacityDays) {
+    warnings.push(
+      `Day ${day.day} (${day.title}) is at ${Math.round(day.totalMinutes / 60 * 10) / 10} hours — slightly over the ${pace} pace budget. A consultant can adjust timing.`
+    );
+  }
+
+  return {
+    feasible: dropped.length === 0,
+    warnings,
+    droppedAttractions: dropped,
+    usedAttractions: scored
+      .filter((s) => usedSlugs.has(s.attraction.slug))
+      .map((s) => s.attraction),
+  };
+}
+
+
+// ── Destination-aware cluster lookup (replaces hardcoded REGION_CLUSTERS) ────
+
+/**
+ * Returns the cluster key for a region, using the active destination's cluster map
+ * if available, otherwise falling back to the static REGION_CLUSTERS table above.
+ * Import and pass `destinationClusters` from `getActiveDestination().regionClusters`
+ * in server contexts where you have access to the destination registry.
+ */
+export function getClusterForDestination(
+  region: string,
+  destinationClusters?: Record<string, string>
+): string {
+  if (destinationClusters && destinationClusters[region]) {
+    return destinationClusters[region];
+  }
+  return getCluster(region); // fall back to static map
 }

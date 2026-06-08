@@ -24,24 +24,24 @@ export async function POST(request: Request) {
     message: String(formData.get('message') || '').trim() || null
   };
 
-  const aiChatSummary = String(formData.get('aiChatSummary') || '').trim() || null;
-
   let payload;
   try {
     payload = EnquirySchema.parse(raw);
   } catch (err) {
     if (err instanceof ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message ?? 'Invalid form data' }, { status: 422 });
+      const firstIssue = err.issues[0]?.message ?? 'Invalid form data';
+      const params = new URLSearchParams({ error: firstIssue });
+      return NextResponse.redirect(new URL(`/enquiry?${params}`, request.url), 303);
     }
-    return NextResponse.json({ error: 'Unknown error' }, { status: 500 });
+    return NextResponse.redirect(new URL('/enquiry?error=Unknown+error', request.url), 303);
   }
 
   await prisma.enquiry.create({
-    data: { ...payload, source: 'website-enquiry', status: 'New', aiChatSummary }
+    data: { ...payload, source: 'website-enquiry', status: 'New' }
   });
 
   const adminEmail = getAdminNotificationEmail();
-  const adminTemplate = enquiryReceivedAdminTemplate({ ...payload, aiChatSummary });
+  const adminTemplate = enquiryReceivedAdminTemplate(payload);
   const customerTemplate = enquiryReceivedCustomerTemplate({ fullName: payload.fullName });
 
   await Promise.allSettled([
@@ -64,5 +64,5 @@ export async function POST(request: Request) {
       : Promise.resolve()
   ]);
 
-  return NextResponse.json({ success: true });
+  return NextResponse.redirect(new URL('/enquiry?success=1', request.url), 303);
 }

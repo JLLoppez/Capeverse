@@ -6,14 +6,7 @@ type Tour = {
   durationType: string; priceFrom: any; category: string; imageUrl: string | null;
 };
 
-/** Approximate EUR conversion for international guests (display hint only) */
-function approxEur(zar: number): string {
-  const eur = Math.round(zar * 0.050);
-  return `≈ €${eur.toLocaleString()}`;
-}
-
 export function TourCard({ tour }: { tour: Tour }) {
-  const zarAmount = Number(tour.priceFrom);
   return (
     <Link href={`/tours/${tour.slug}`} style={{display:'block',textDecoration:'none'}}>
       <div className="card" style={{cursor:'pointer'}}>
@@ -33,8 +26,7 @@ export function TourCard({ tour }: { tour: Tour }) {
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:'0.75rem',borderTop:'1px solid var(--line)',marginTop:'0.25rem'}}>
             <div>
               <div style={{fontSize:'0.62rem',letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text-faint)',marginBottom:'0.2rem'}}>{tour.durationType}</div>
-              <div style={{fontSize:'1rem',fontWeight:600,color:'var(--gold)'}}>From R {zarAmount.toLocaleString()}</div>
-              <div style={{fontSize:'0.7rem',color:'var(--text-faint)',marginTop:'0.1rem'}}>{approxEur(zarAmount)} per person</div>
+              <div style={{fontSize:'1rem',fontWeight:600,color:'var(--gold)'}}>From R {Number(tour.priceFrom).toLocaleString()}</div>
             </div>
             <ArrowRight size={16} style={{color:'var(--gold)'}} />
           </div>
