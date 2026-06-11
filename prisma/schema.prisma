@@ -107,6 +107,7 @@ model Booking {
   updatedAt       DateTime  @updatedAt
   tour            Tour      @relation(fields: [tourId], references: [id])
   reviewRequested Boolean   @default(false)
+  reviews         Review[]
 }
 
 model PageView {
@@ -142,6 +143,7 @@ model Review {
   id          String   @id @default(cuid())
   tourId      String
   bookingId   String?  // optional — link back to the booking
+  booking     Booking? @relation(fields: [bookingId], references: [id])
   reviewToken String   @unique @default(cuid()) // emailed to customer
   rating      Int?     // 1-5, null until submitted
   body        String?

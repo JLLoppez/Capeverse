@@ -1,15 +1,15 @@
-import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
-import { prisma } from '@/lib/prisma';
-import { rateLimitResponse } from '@/lib/rateLimit';
-import { getActiveDestination } from '@/lib/destinations';
+import { NextResponse }              from 'next/server';
+import { prisma }                   from '@/lib/prisma';
+import { chat, isGeminiConfigured } from '@/lib/gemini';
+import { rateLimitResponse }        from '@/lib/rateLimit';
+import { getActiveDestination }     from '@/lib/destinations';
 
 async function buildSystemPrompt(): Promise<string> {
   const destination = getActiveDestination();
 
   const attractions = await prisma.attraction.findMany({
-    where: { isActive: true },
-    select: { name: true, region: true, tags: true, estimatedVisitMinutes: true, shortDescription: true },
+    where:   { isActive: true },
+    select:  { name: true, region: true, tags: true, estimatedVisitMinutes: true, shortDescription: true },
     orderBy: { name: 'asc' },
   });
 
@@ -39,6 +39,7 @@ ${inventoryBlock}
 </inventory>`;
 }
 
+// Keyword-matched fallback — used when Gemini is not configured
 function localReply(messages: Array<{ role: string; content: string }>): string {
   const latest  = messages[messages.length - 1]?.content?.toLowerCase() ?? '';
   const history = messages.map((m) => m.content.toLowerCase()).join(' ');
@@ -73,39 +74,25 @@ export async function POST(request: Request) {
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
   const messages = Array.isArray(body.messages) ? body.messages.slice(-20) : [];
+  const sid      = body.sessionId ?? crypto.randomUUID();
 
-  if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json({
-      reply: localReply(messages),
-      sessionId: body.sessionId ?? crypto.randomUUID(),
-    });
+  if (!isGeminiConfigured()) {
+    return NextResponse.json({ reply: localReply(messages), sessionId: sid });
   }
 
   try {
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const systemPrompt = await buildSystemPrompt();
 
-    const chatMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-      { role: 'system', content: systemPrompt },
-      ...messages.map((m) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      })),
-    ];
+    // Map to ChatMessage[] — role must be 'user' | 'assistant'
+    const chatMessages = messages.map((m) => ({
+      role:    (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+      content: m.content,
+    }));
 
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: chatMessages,
-      max_tokens: 400,
-      temperature: 0.8,
-    });
-
-    const reply = response.choices[0]?.message?.content ?? localReply(messages);
-    return NextResponse.json({ reply, sessionId: body.sessionId ?? crypto.randomUUID() });
-  } catch {
-    return NextResponse.json({
-      reply: localReply(messages),
-      sessionId: body.sessionId ?? crypto.randomUUID(),
-    });
+    const reply = await chat(chatMessages, systemPrompt);
+    return NextResponse.json({ reply, sessionId: sid });
+  } catch (err) {
+    console.error('[ai/chat]', err);
+    return NextResponse.json({ reply: localReply(messages), sessionId: sid });
   }
 }

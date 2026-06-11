@@ -67,24 +67,14 @@ function extractHints(messages: Message[]): ItineraryHint {
 }
 
 export function AIAssistant() {
-  const [messages, setMessages] = useState<Message[]>(() => {
-    // Restore chat from localStorage on mount (client-side only)
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('cv_chat_history');
-        if (stored) {
-          const parsed = JSON.parse(stored) as { messages: Message[]; ts: number };
-          // Discard if older than 24 hours
-          if (Date.now() - parsed.ts < 24 * 60 * 60 * 1000) return parsed.messages;
-        }
-      } catch { /* ignore parse errors */ }
-    }
-    return [{
-      role: 'assistant',
-      content:
-        'Welcome to Cape Compass ✨ Tell me how many days you have, who you\'re travelling with, and what style fits you best — scenic, wine, culture, family, food, or luxury. The more detail you give, the better I can tailor the plan.',
-    }];
-  });
+  // FIX: always initialise with WELCOME to match SSR output — avoids hydration mismatch.
+  // localStorage restore happens in useEffect (client-only, after hydration).
+  const [messages, setMessages] = useState<Message[]>([{
+    role: 'assistant',
+    content:
+      'Welcome to Cape Compass ✨ Tell me how many days you have, who you\'re travelling with, and what style fits you best — scenic, wine, culture, family, food, or luxury. The more detail you give, the better I can tailor the plan.',
+  }]);
+  const [hydrated, setHydrated] = useState(false);
   const [input, setInput]           = useState('');
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState<string | null>(null);
@@ -100,12 +90,26 @@ export function AIAssistant() {
     setSessionId(id);
   }, []);
 
-  // Persist chat history to localStorage on every message update
+  // Restore localStorage on mount — after hydration only
   useEffect(() => {
     try {
+      const stored = localStorage.getItem('cv_chat_history');
+      if (stored) {
+        const parsed = JSON.parse(stored) as { messages: Message[]; ts: number };
+        if (Date.now() - parsed.ts < 24 * 60 * 60 * 1000) setMessages(parsed.messages);
+      }
+    } catch { /* ignore parse errors */ }
+    setHydrated(true);
+  }, []);
+
+  // Persist chat history to localStorage — only after hydration to avoid
+  // overwriting stored history before the restore useEffect has run.
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
       localStorage.setItem('cv_chat_history', JSON.stringify({ messages, ts: Date.now() }));
-    } catch { /* quota exceeded or SSR — ignore */ }
-  }, [messages]);
+    } catch { /* quota exceeded — ignore */ }
+  }, [messages, hydrated]);
 
   // Auto-scroll on new message
   useEffect(() => {

@@ -269,7 +269,7 @@ export function TripPlanner({ attractions }: PlannerProps) {
           </div>
         ) : (
           <div className="itinerary-output">
-            {result.aiEnriched !== undefined && (
+            {result.aiEnriched !== null && result.aiEnriched !== undefined && (
               <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginBottom: '0.75rem' }}>
                 {result.aiEnriched ? '✦ AI-enriched itinerary' : '⚙ Rule-based itinerary'}
               </p>

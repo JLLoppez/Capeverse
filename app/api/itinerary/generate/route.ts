@@ -1,14 +1,11 @@
-import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
-import { prisma } from '@/lib/prisma';
-import { ItineraryGenerateSchema } from '@/lib/schemas';
-import {
-  rankAttractions,
-  buildDayGroups,
-  checkFeasibility,
-} from '@/lib/scoring';
-import { rateLimitResponse } from '@/lib/rateLimit';
-import { ZodError } from 'zod';
+import { NextResponse }                                    from 'next/server';
+import { ZodError }                                        from 'zod';
+import { prisma }                                          from '@/lib/prisma';
+import { ItineraryGenerateSchema }                         from '@/lib/schemas';
+import { rankAttractions, buildDayGroups, checkFeasibility } from '@/lib/scoring';
+import { generateJSON, isGeminiConfigured }                from '@/lib/gemini';
+import { rateLimitResponse }                               from '@/lib/rateLimit';
+import { getCTWeather }                                    from '@/lib/weather';
 
 const PRICE_BANDS: Record<string, string> = {
   Luxury:      'Estimated from ZAR 4,000+ per day (private guide, premium transport)',
@@ -35,52 +32,51 @@ export async function POST(request: Request) {
 
   const { attractionIds, days, budget, pace, groupType, interests } = parsed;
 
-  // Fetch selected attractions including estimatedVisitMinutes for time-budget checks
   const dbAttractions = await prisma.attraction.findMany({
-    where: { id: { in: attractionIds }, isActive: true },
-    select: {
-      id: true, name: true, slug: true, region: true,
-      tags: true, estimatedVisitMinutes: true,
-    },
+    where:  { id: { in: attractionIds }, isActive: true },
+    select: { id: true, name: true, slug: true, region: true, tags: true, estimatedVisitMinutes: true },
   });
 
   const stubs = dbAttractions.map((a) => ({
-    id: a.id,
-    name: a.name,
-    slug: a.slug,
-    region: a.region,
-    tags: a.tags as string[],
+    id:                    a.id,
+    name:                  a.name,
+    slug:                  a.slug,
+    region:                a.region,
+    tags:                  a.tags as string[],
     estimatedVisitMinutes: a.estimatedVisitMinutes ?? 60,
   }));
 
-  // FIX: pass real interests + mustSee (slugs of user-selected attractions)
-  const mustSee = stubs.map((s) => s.slug);
-  const ranked = rankAttractions(stubs, { days, groupType, budget, pace, interests, mustSee });
-
-  // Geographic clustering + time-budget enforcement
-  const dayGroups = buildDayGroups(ranked, days, pace);
+  const mustSee    = stubs.map((s) => s.slug);
+  const ranked     = rankAttractions(stubs, { days, groupType, budget, pace, interests, mustSee });
+  const dayGroups  = buildDayGroups(ranked, days, pace);
   const feasibility = checkFeasibility(ranked, days, pace);
 
-  const estimatedPriceBand = PRICE_BANDS[budget] ?? PRICE_BANDS['Mid-range'];
-  const recommendedTourType =
-    dbAttractions.length > 3 || days > 1
-      ? 'Private full-day custom planning'
-      : 'Half-day custom experience';
+  const estimatedPriceBand  = PRICE_BANDS[budget] ?? PRICE_BANDS['Mid-range'];
+  const recommendedTourType = dbAttractions.length > 3 || days > 1
+    ? 'Private full-day custom planning'
+    : 'Half-day custom experience';
 
-  // ── GPT: structural decisions + per-stop reasons + narrative ─────────────
-  if (process.env.OPENAI_API_KEY) {
+  // ── Live weather context (non-blocking) ───────────────────────────────────
+  let weatherContext = '';
+  try {
+    const weather = await getCTWeather();
+    weatherContext = weather.microclimate.promptContext;
+  } catch {
+    // Weather unavailable — itinerary generates without it
+  }
+
+  // ── Gemini enrichment ─────────────────────────────────────────────────────
+  if (isGeminiConfigured()) {
     try {
-      const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-      const groupedForGPT = dayGroups.map((g) => ({
-        day: g.day,
-        cluster: g.cluster,
-        suggestedTitle: g.title,
-        totalMinutes: g.totalMinutes,
+      const groupedForAI = dayGroups.map((g) => ({
+        day:           g.day,
+        cluster:       g.cluster,
+        suggestedTitle:g.title,
+        totalMinutes:  g.totalMinutes,
         stops: g.items.map((i) => ({
-          name: i.attraction.name,
-          region: i.attraction.region,
-          tags: i.attraction.tags,
+          name:                  i.attraction.name,
+          region:                i.attraction.region,
+          tags:                  i.attraction.tags,
           estimatedVisitMinutes: i.attraction.estimatedVisitMinutes ?? 60,
         })),
       }));
@@ -94,72 +90,58 @@ Trip details:
 - Pace: ${pace}
 - Interests: ${interests.join(', ')}
 ${feasibility.warnings.length > 0 ? `- Notes: ${feasibility.warnings.join(' | ')}` : ''}
-
+${weatherContext ? `\nLive Cape Town conditions for Day 1:\n${weatherContext}\nUse these to sequence stops wisely. If conditions affect a specific stop (e.g. Table Mountain cable car likely closed, Atlantic Seaboard windy), note this naturally in that stop's reason or the summary.\n` : ''}
 Proposed day structure (geographically clustered, time-budgeted):
-${JSON.stringify(groupedForGPT, null, 2)}
+${JSON.stringify(groupedForAI, null, 2)}
 
 Your tasks:
 1. Confirm or improve each day title — make it specific and evocative, not generic.
 2. For each stop, write a 1-sentence reason tailored to this traveller's interests and group type.
-3. If any day looks geographically illogical or time-impossible, flag it in the summary.
-4. Write a warm 3-sentence trip summary: open with what makes this specific combination special, describe what the traveller will feel (not just see), close with a natural call to speak to a consultant.
-5. Do NOT use phrases like "unforgettable journey" or "once-in-a-lifetime".
+3. If any day is geographically illogical or time-impossible, flag it in the summary.
+4. Write a warm 3-sentence trip summary: open with what makes this combination special, describe what the traveller will feel (not just see), close with a natural call to speak to a consultant.
+5. Do NOT use "unforgettable journey" or "once-in-a-lifetime".
 
-Return JSON only (no markdown) with this exact shape:
-{
-  "summary": "string",
-  "days": [
-    {
-      "day": 1,
-      "title": "string",
-      "stops": [{ "name": "string", "reason": "string", "region": "string" }]
-    }
-  ]
-}`;
+Return JSON only with this exact shape:
+{"summary":"string","days":[{"day":1,"title":"string","stops":[{"name":"string","reason":"string","region":"string"}]}]}`;
 
-      const response = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1400,
-        temperature: 0.7,
-        response_format: { type: 'json_object' },
-      });
-
-      const text = response.choices[0]?.message?.content ?? '';
-      const gpt = JSON.parse(text);
+      const result = await generateJSON<{
+        summary: string;
+        days: Array<{ day: number; title: string; stops: Array<{ name: string; reason: string; region: string }> }>;
+      }>(prompt);
 
       return NextResponse.json({
-        summary: gpt.summary ?? fallbackSummary(dbAttractions.length, days, pace),
+        summary:             result.summary ?? fallbackSummary(dbAttractions.length, days, pace),
         recommendedTourType,
         estimatedPriceBand,
-        days: gpt.days ?? dayGroups.map(serializeGroup),
-        warnings: feasibility.warnings,
-        droppedAttractions: feasibility.droppedAttractions.map((a) => a.name),
-        aiEnriched: true,
+        days:                result.days ?? dayGroups.map(serializeGroup),
+        warnings:            feasibility.warnings,
+        droppedAttractions:  feasibility.droppedAttractions.map((a) => a.name),
+        aiEnriched:          true,
+        weatherEnriched:     !!weatherContext,
       });
     } catch {
       // Fall through to rule-based response
     }
   }
 
-  // Rule-based fallback
   return NextResponse.json({
-    summary: fallbackSummary(dbAttractions.length, days, pace),
+    summary:            fallbackSummary(dbAttractions.length, days, pace),
     recommendedTourType,
     estimatedPriceBand,
-    days: dayGroups.map(serializeGroup),
-    warnings: feasibility.warnings,
+    days:               dayGroups.map(serializeGroup),
+    warnings:           feasibility.warnings,
     droppedAttractions: feasibility.droppedAttractions.map((a) => a.name),
-    aiEnriched: false,
+    aiEnriched:         false,
+    weatherEnriched:    false,
   });
 }
 
 function serializeGroup(g: ReturnType<typeof buildDayGroups>[number]) {
   return {
-    day: g.day,
+    day:   g.day,
     title: g.title,
     stops: g.items.map((i) => ({
-      name: i.attraction.name,
+      name:   i.attraction.name,
       region: i.attraction.region,
       reason: 'Matches your interests and fits a practical Cape Town route.',
     })),
