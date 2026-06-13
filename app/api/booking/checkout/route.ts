@@ -66,8 +66,8 @@ export async function POST(request: Request) {
       groupSize: String(groupSize),
       customerName,
     },
-    success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/tours/${tour.slug}?booking=cancelled`,
+    success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/tours/${tour.slug}?booking=cancelled`,
   });
 
   return NextResponse.json({ url: session.url });

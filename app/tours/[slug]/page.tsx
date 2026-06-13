@@ -55,7 +55,7 @@ export default async function TourDetailPage({ params }: { params: Promise<{ slu
                   <li key={stop.id}>
                     <strong>{stop.attraction.name}</strong> — {stop.attraction.region}
                     {stop.suggestedStopMinutes && (
-                      <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>
+                      <span style={{ color: 'rgba(13,31,45,0.45)', fontSize: '0.82rem' }}>
                         {' '}· ~{stop.suggestedStopMinutes} min
                       </span>
                     )}

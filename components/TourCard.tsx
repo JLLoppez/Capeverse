@@ -8,27 +8,35 @@ type Tour = {
 
 export function TourCard({ tour }: { tour: Tour }) {
   return (
-    <Link href={`/tours/${tour.slug}`} style={{display:'block',textDecoration:'none'}}>
-      <div className="card" style={{cursor:'pointer'}}>
+    <Link href={`/tours/${tour.slug}`} style={{ display: 'block', textDecoration: 'none' }}>
+      <div className="card">
         <div className="card-image-wrap">
           {tour.imageUrl ? (
-            <img src={tour.imageUrl} alt={tour.title} className="card-image" style={{width:'100%',height:'240px',objectFit:'cover'}} />
+            <img src={tour.imageUrl} alt={tour.title} className="card-image" />
           ) : (
-            <div style={{width:'100%',height:'240px',background:'var(--surface-3)',display:'grid',placeItems:'center'}}>
-              <span style={{color:'var(--text-faint)',fontSize:'2rem'}}>🗺</span>
+            <div className="card-image" style={{ background: 'var(--ink)', display: 'grid', placeItems: 'center' }}>
+              <span style={{ fontSize: '2.5rem', opacity: 0.25 }}>🗺</span>
             </div>
           )}
+          <span className="card-region-badge">{tour.category}</span>
+          <span style={{
+            position: 'absolute', bottom: '0.9rem', right: '0.9rem',
+            fontSize: '0.66rem', fontWeight: 500, color: 'rgba(255,255,255,0.8)',
+            background: 'rgba(13,31,45,0.6)', backdropFilter: 'blur(8px)',
+            padding: '0.22rem 0.65rem', borderRadius: 999,
+          }}>{tour.durationType}</span>
         </div>
         <div className="card-body">
-          <span className="pill">{tour.category}</span>
-          <h3 style={{color:'var(--text)',fontSize:'1.15rem',marginTop:'0.25rem'}}>{tour.title}</h3>
-          <p style={{fontSize:'0.85rem',overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{tour.summary}</p>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:'0.75rem',borderTop:'1px solid var(--line)',marginTop:'0.25rem'}}>
-            <div>
-              <div style={{fontSize:'0.62rem',letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text-faint)',marginBottom:'0.2rem'}}>{tour.durationType}</div>
-              <div style={{fontSize:'1rem',fontWeight:600,color:'var(--gold)'}}>From R {Number(tour.priceFrom).toLocaleString()}</div>
+          <div className="card-label">{tour.category}</div>
+          <div className="card-title">{tour.title}</div>
+          <p className="card-desc">{tour.summary}</p>
+          <div className="card-footer">
+            <div className="card-price">
+              <span>from</span>R {Number(tour.priceFrom).toLocaleString()}
             </div>
-            <ArrowRight size={16} style={{color:'var(--gold)'}} />
+            <span className="btn btn-outline btn-sm" style={{ gap: '0.3rem' }}>
+              View <ArrowRight size={13} />
+            </span>
           </div>
         </div>
       </div>

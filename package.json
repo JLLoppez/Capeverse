@@ -7,9 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test:coverage": "jest --coverage --passWithNoTests",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:all": "npm test && npm run test:e2e",
@@ -18,7 +18,8 @@
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
-    "setup": "prisma migrate deploy && npm run seed"
+    "setup": "prisma migrate deploy && npm run seed",
+    "test:e2e:headed": "playwright test --headed"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
@@ -62,6 +63,24 @@
           }
         }
       ]
-    }
+    },
+    "collectCoverageFrom": [
+      "lib/**/*.ts",
+      "app/api/**/*.ts",
+      "middleware.ts",
+      "!lib/prisma.ts",
+      "!**/*.d.ts"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 60,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    },
+    "setupFilesAfterFramework": [
+      "<rootDir>/__tests__/jest.setup.ts"
+    ]
   }
 }

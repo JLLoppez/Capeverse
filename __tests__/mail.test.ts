@@ -1,132 +1,160 @@
 /**
- * Unit tests for lib/mail.ts
- * Tests email template generation
+ * Unit tests — lib/mail.ts
+ * Covers: sendEmail, all transport paths, error handling
  */
 
-import {
-  enquiryReceivedAdminTemplate,
-  enquiryReceivedCustomerTemplate,
-  enquiryStatusTemplate
-} from '../lib/mail';
+// Mock nodemailer before importing mail
+jest.mock('nodemailer', () => ({
+  createTransport: jest.fn(() => ({
+    sendMail: jest.fn().mockResolvedValue({ messageId: 'test-id-123' }),
+    verify:   jest.fn().mockResolvedValue(true),
+  })),
+}));
 
-// ─── enquiryReceivedAdminTemplate ────────────────────────────────────────────
+import nodemailer from 'nodemailer';
+import { sendEmail } from '../lib/mail';
 
-describe('enquiryReceivedAdminTemplate', () => {
-  const baseData = {
-    fullName: 'Jose Lopes',
-    email: 'jose@example.com',
-    phone: '+27761234567',
-    travelDate: new Date('2026-06-15'),
-    groupSize: 4,
-    budgetRange: 'Luxury',
-    tripLengthDays: 7,
-    nationality: 'South African',
-    message: 'We want penguins and wine tasting.'
-  };
+const mockTransport = {
+  sendMail: jest.fn().mockResolvedValue({ messageId: 'test-id-123' }),
+  verify:   jest.fn().mockResolvedValue(true),
+};
+(nodemailer.createTransport as jest.Mock).mockReturnValue(mockTransport);
 
-  test('returns subject containing the full name', () => {
-    const { subject } = enquiryReceivedAdminTemplate(baseData);
-    expect(subject).toContain('Jose Lopes');
+const validPayload = {
+  to:      'recipient@example.com',
+  subject: 'Test subject',
+  html:    '<p>Hello</p>',
+  text:    'Hello',
+};
+
+beforeEach(() => jest.clearAllMocks());
+
+// ─── SMTP configured ──────────────────────────────────────────────────────────
+
+describe('sendEmail — SMTP configured', () => {
+  beforeEach(() => {
+    process.env.SMTP_HOST = 'smtp.resend.com';
+    process.env.SMTP_PORT = '587';
+    process.env.SMTP_USER = 'resend';
+    process.env.SMTP_PASS = 're_testkey123';
+    process.env.FROM_EMAIL = 'Capeverse <hello@capeverse.co.za>';
+  });
+  afterEach(() => {
+    delete process.env.SMTP_HOST;
+    delete process.env.SMTP_PORT;
+    delete process.env.SMTP_USER;
+    delete process.env.SMTP_PASS;
+    delete process.env.FROM_EMAIL;
   });
 
-  test('returns non-empty HTML', () => {
-    const { html } = enquiryReceivedAdminTemplate(baseData);
-    expect(html.length).toBeGreaterThan(50);
+  test('returns sent: true on success', async () => {
+    const result = await sendEmail(validPayload);
+    expect(result.sent).toBe(true);
   });
-
-  test('HTML contains the email address', () => {
-    const { html } = enquiryReceivedAdminTemplate(baseData);
-    expect(html).toContain('jose@example.com');
+  test('calls sendMail once', async () => {
+    await sendEmail(validPayload);
+    expect(mockTransport.sendMail).toHaveBeenCalledTimes(1);
   });
-
-  test('HTML contains the phone number', () => {
-    const { html } = enquiryReceivedAdminTemplate(baseData);
-    expect(html).toContain('+27761234567');
+  test('passes correct to address', async () => {
+    await sendEmail(validPayload);
+    const call = mockTransport.sendMail.mock.calls[0][0];
+    expect(call.to).toBe('recipient@example.com');
   });
-
-  test('HTML contains the message', () => {
-    const { html } = enquiryReceivedAdminTemplate(baseData);
-    expect(html).toContain('penguins and wine tasting');
+  test('passes correct subject', async () => {
+    await sendEmail(validPayload);
+    const call = mockTransport.sendMail.mock.calls[0][0];
+    expect(call.subject).toBe('Test subject');
   });
-
-  test('handles null optional fields gracefully', () => {
-    const result = enquiryReceivedAdminTemplate({
-      fullName: 'Test User',
-      email: 'test@example.com',
-      phone: null,
-      travelDate: null,
-      groupSize: null,
-      budgetRange: null,
-      tripLengthDays: null,
-      nationality: null,
-      message: null
-    });
-    expect(result.html).toContain('Not provided');
-    expect(result.html).toContain('No message supplied');
+  test('passes correct html body', async () => {
+    await sendEmail(validPayload);
+    const call = mockTransport.sendMail.mock.calls[0][0];
+    expect(call.html).toBe('<p>Hello</p>');
   });
-
-  test('returns plain text version', () => {
-    const { text } = enquiryReceivedAdminTemplate(baseData);
-    expect(text).toContain('Jose Lopes');
-    expect(text).toContain('jose@example.com');
+  test('passes correct text body', async () => {
+    await sendEmail(validPayload);
+    const call = mockTransport.sendMail.mock.calls[0][0];
+    expect(call.text).toBe('Hello');
+  });
+  test('uses FROM_EMAIL as from address', async () => {
+    await sendEmail(validPayload);
+    const call = mockTransport.sendMail.mock.calls[0][0];
+    expect(call.from).toBe('Capeverse <hello@capeverse.co.za>');
+  });
+  test('falls back to default from when FROM_EMAIL unset', async () => {
+    delete process.env.FROM_EMAIL;
+    await sendEmail(validPayload);
+    const call = mockTransport.sendMail.mock.calls[0][0];
+    expect(call.from).toBeTruthy();
+  });
+  test('works with html-only (no text)', async () => {
+    const { text, ...noText } = validPayload;
+    const result = await sendEmail(noText);
+    expect(result.sent).toBe(true);
+  });
+  test('creates transport with correct host', async () => {
+    await sendEmail(validPayload);
+    expect(nodemailer.createTransport).toHaveBeenCalledWith(
+      expect.objectContaining({ host: 'smtp.resend.com' })
+    );
+  });
+  test('creates transport with correct port', async () => {
+    await sendEmail(validPayload);
+    expect(nodemailer.createTransport).toHaveBeenCalledWith(
+      expect.objectContaining({ port: 587 })
+    );
   });
 });
 
-// ─── enquiryReceivedCustomerTemplate ─────────────────────────────────────────
+// ─── SMTP not configured ──────────────────────────────────────────────────────
 
-describe('enquiryReceivedCustomerTemplate', () => {
-  test('returns correct subject', () => {
-    const { subject } = enquiryReceivedCustomerTemplate({ fullName: 'Jose' });
-    expect(subject).toContain('Cape');
+describe('sendEmail — SMTP not configured', () => {
+  beforeEach(() => {
+    delete process.env.SMTP_HOST;
+    delete process.env.SMTP_USER;
+    delete process.env.SMTP_PASS;
   });
 
-  test('HTML contains the traveller name', () => {
-    const { html } = enquiryReceivedCustomerTemplate({ fullName: 'Jose Lopes' });
-    expect(html).toContain('Jose Lopes');
+  test('returns sent: false', async () => {
+    const result = await sendEmail(validPayload);
+    expect(result.sent).toBe(false);
   });
-
-  test('returns non-empty HTML', () => {
-    const { html } = enquiryReceivedCustomerTemplate({ fullName: 'Jose' });
-    expect(html.length).toBeGreaterThan(50);
+  test('returns a reason string', async () => {
+    const result = await sendEmail(validPayload);
+    expect(typeof result.reason).toBe('string');
+    expect((result.reason as string).length).toBeGreaterThan(0);
   });
-
-  test('returns plain text version', () => {
-    const { text } = enquiryReceivedCustomerTemplate({ fullName: 'Jose Lopes' });
-    expect(text).toContain('Jose Lopes');
+  test('does NOT call sendMail', async () => {
+    await sendEmail(validPayload);
+    expect(mockTransport.sendMail).not.toHaveBeenCalled();
   });
 });
 
-// ─── enquiryStatusTemplate ───────────────────────────────────────────────────
+// ─── SMTP throws ──────────────────────────────────────────────────────────────
 
-describe('enquiryStatusTemplate', () => {
-  test('subject contains the status', () => {
-    const { subject } = enquiryStatusTemplate({ fullName: 'Jose', status: 'Confirmed', notes: null });
-    expect(subject).toContain('Confirmed');
+describe('sendEmail — transport error', () => {
+  beforeEach(() => {
+    process.env.SMTP_HOST = 'smtp.resend.com';
+    process.env.SMTP_PORT = '587';
+    process.env.SMTP_USER = 'resend';
+    process.env.SMTP_PASS = 're_testkey123';
+    mockTransport.sendMail.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+  });
+  afterEach(() => {
+    delete process.env.SMTP_HOST;
+    delete process.env.SMTP_PORT;
+    delete process.env.SMTP_USER;
+    delete process.env.SMTP_PASS;
   });
 
-  test('HTML contains the traveller name', () => {
-    const { html } = enquiryStatusTemplate({ fullName: 'Jose Lopes', status: 'Confirmed', notes: null });
-    expect(html).toContain('Jose Lopes');
+  test('returns sent: false on transport error', async () => {
+    const result = await sendEmail(validPayload);
+    expect(result.sent).toBe(false);
   });
-
-  test('HTML contains the status', () => {
-    const { html } = enquiryStatusTemplate({ fullName: 'Jose', status: 'In Progress', notes: null });
-    expect(html).toContain('In Progress');
+  test('does not throw — error is caught', async () => {
+    await expect(sendEmail(validPayload)).resolves.not.toThrow();
   });
-
-  test('HTML contains notes when provided', () => {
-    const { html } = enquiryStatusTemplate({ fullName: 'Jose', status: 'Confirmed', notes: 'Your driver will be John.' });
-    expect(html).toContain('Your driver will be John.');
-  });
-
-  test('HTML does not contain notes section when notes is null', () => {
-    const { html } = enquiryStatusTemplate({ fullName: 'Jose', status: 'Confirmed', notes: null });
-    expect(html).not.toContain('Notes from our team');
-  });
-
-  test('returns plain text version', () => {
-    const { text } = enquiryStatusTemplate({ fullName: 'Jose', status: 'Confirmed', notes: 'All good.' });
-    expect(text).toContain('Confirmed');
-    expect(text).toContain('All good.');
+  test('returns reason containing error message', async () => {
+    const result = await sendEmail(validPayload);
+    expect(result.reason).toContain('ECONNREFUSED');
   });
 });

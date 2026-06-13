@@ -7,27 +7,26 @@ type Attraction = {
 };
 
 export function AttractionCard({ attraction }: { attraction: Attraction }) {
+  const free = !attraction.entranceFee || Number(attraction.entranceFee) === 0;
   return (
-    <Link href={`/attractions/${attraction.slug}`} style={{display:'block',textDecoration:'none'}}>
-      <div className="card" style={{cursor:'pointer'}}>
+    <Link href={`/attractions/${attraction.slug}`} style={{ display: 'block', textDecoration: 'none' }}>
+      <div className="card">
         <div className="card-image-wrap">
           {attraction.imageUrl ? (
-            <img src={attraction.imageUrl} alt={attraction.name} className="card-image" style={{width:'100%',height:'210px',objectFit:'cover'}} />
+            <img src={attraction.imageUrl} alt={attraction.name} className="card-image" />
           ) : (
-            <div style={{width:'100%',height:'210px',background:'var(--surface-3)',display:'grid',placeItems:'center'}}>
-              <span style={{color:'var(--text-faint)',fontSize:'2rem'}}>📍</span>
+            <div className="card-image" style={{ background: 'var(--ink)', display: 'grid', placeItems: 'center' }}>
+              <span style={{ fontSize: '2rem', opacity: 0.25 }}>📍</span>
             </div>
           )}
+          <span className="card-region-badge">{attraction.region}</span>
         </div>
         <div className="card-body">
-          <span className="pill">{attraction.region}</span>
-          <h3 style={{color:'var(--text)',fontSize:'1.1rem'}}>{attraction.name}</h3>
-          <p style={{fontSize:'0.82rem',overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{attraction.shortDescription}</p>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:'0.75rem',borderTop:'1px solid var(--line)',marginTop:'0.25rem'}}>
-            <div style={{fontSize:'0.68rem',letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--text-faint)'}}>
-              {attraction.entranceFee && Number(attraction.entranceFee) > 0 ? `From R ${Number(attraction.entranceFee)}` : 'Free entry'}
-            </div>
-            <ArrowRight size={15} style={{color:'var(--gold)'}} />
+          <div className="card-title" style={{ fontSize: '1.1rem' }}>{attraction.name}</div>
+          <p className="card-desc">{attraction.shortDescription}</p>
+          <div className="card-footer">
+            <span className="pill">{free ? 'Free entry' : `From R ${Number(attraction.entranceFee)}`}</span>
+            <ArrowRight size={14} style={{ color: 'var(--sienna)', flexShrink: 0 }} />
           </div>
         </div>
       </div>

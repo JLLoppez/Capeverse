@@ -1,57 +1,153 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
+import { MessageCircle, Map, MapPin, Star, Calendar, TrendingUp } from 'lucide-react';
 
 export default async function AdminDashboardPage() {
-  const [tours, attractions, enquiries, recentEnquiries] = await Promise.all([
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const [tours, attractions, totalEnquiries, recentEnquiries, pendingReviews, savedItineraries, funnelEvents] = await Promise.all([
     prisma.tour.count(),
     prisma.attraction.count(),
     prisma.enquiry.count(),
-    prisma.enquiry.findMany({ orderBy: { createdAt: 'desc' }, take: 6 })
+    prisma.enquiry.findMany({
+      orderBy: { createdAt: 'desc' }, take: 8,
+      select: { id: true, fullName: true, email: true, nationality: true, budgetRange: true, travelDate: true, groupSize: true, status: true, createdAt: true, interests: true },
+    }),
+    prisma.review.count({ where: { submittedAt: { not: null }, approved: false } }),
+    prisma.savedItinerary.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+    prisma.funnelEvent.groupBy({
+      by: ['event'], where: { createdAt: { gte: thirtyDaysAgo } }, _count: { event: true },
+    }),
   ]);
 
-  const stats = [
-    { label: 'Total tours', value: tours, color: '#0E4D64', bg: 'rgba(14,77,100,0.08)' },
-    { label: 'Total attractions', value: attractions, color: '#4F7C5A', bg: 'rgba(79,124,90,0.08)' },
-    { label: 'Total enquiries', value: enquiries, color: '#d4853a', bg: 'rgba(242,166,90,0.12)' },
-    { label: 'New leads this week', value: recentEnquiries.length, color: '#c0392b', bg: 'rgba(192,57,43,0.08)' },
+  const funnelMap: Record<string, number> = {};
+  for (const row of funnelEvents) funnelMap[row.event] = row._count.event;
+
+  const funnelSteps = [
+    { step: 'Viewed tour',         count: funnelMap['viewed_tour']          ?? 0 },
+    { step: 'Started planner',     count: funnelMap['started_planner']      ?? 0 },
+    { step: 'Generated itinerary', count: funnelMap['generated_itinerary']  ?? 0 },
+    { step: 'Saved itinerary',     count: funnelMap['saved_itinerary']      ?? 0 },
+    { step: 'Submitted enquiry',   count: funnelMap['submitted_enquiry']    ?? 0 },
+    { step: 'Completed booking',   count: funnelMap['completed_booking']    ?? 0 },
+  ];
+  const maxCount = Math.max(...funnelSteps.map(s => s.count), 1);
+
+  const statCards = [
+    { label: 'Tours',            value: tours,            icon: Map,           href: '/admin/tours',        accent: 'var(--ink)' },
+    { label: 'Attractions',      value: attractions,      icon: MapPin,        href: '/admin/attractions',  accent: 'var(--jade)' },
+    { label: 'Total enquiries',  value: totalEnquiries,   icon: MessageCircle, href: '/admin/enquiries',    accent: 'var(--sienna)' },
+    { label: 'Saved itineraries (30d)', value: savedItineraries, icon: TrendingUp, href: '/admin/enquiries', accent: 'var(--mist)' },
   ];
 
   return (
-    <div style={{display:'grid',gap:'1.5rem'}}>
+    <div style={{ display: 'grid', gap: '2rem' }}>
+      {/* Header */}
       <div>
-        <span style={{fontSize:'0.7rem',fontWeight:700,letterSpacing:'0.14em',textTransform:'uppercase',color:'#d4853a'}}>Admin Dashboard</span>
-        <h1 style={{fontSize:'2rem',fontWeight:700,marginTop:'0.25rem',color:'#1F2933'}}>Overview</h1>
+        <h1 style={{ marginBottom: '0.3rem' }}>Dashboard</h1>
+        <p className="muted" style={{ fontSize: '0.85rem', fontWeight: 300 }}>Welcome back. Here's what's happening.</p>
       </div>
 
-      <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'1rem'}}>
-        {stats.map((stat) => (
-          <div key={stat.label} style={{background:'#fff',border:'1px solid rgba(14,77,100,0.1)',borderRadius:'16px',padding:'1.25rem',borderLeft:`4px solid ${stat.color}`}}>
-            <div style={{fontSize:'0.78rem',fontWeight:600,color:'#4a5a63',marginBottom:'0.5rem'}}>{stat.label}</div>
-            <div style={{fontSize:'2rem',fontWeight:800,color:stat.color,lineHeight:1}}>{stat.value}</div>
-          </div>
+      {/* Stat cards */}
+      <div className="grid-4 admin-stat-grid">
+        {statCards.map(({ label, value, icon: Icon, href, accent }) => (
+          <Link key={label} href={href} style={{ textDecoration: 'none' }}>
+            <div className="panel" style={{ display: 'flex', alignItems: 'center', gap: '1rem', transition: 'box-shadow 200ms, transform 200ms' }}
+              onMouseOver={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = 'var(--shadow)'; el.style.transform = 'translateY(-2px)'; }}
+              onMouseOut={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = ''; el.style.transform = ''; }}
+            >
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: `${accent}15`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                <Icon size={20} style={{ color: accent }} />
+              </div>
+              <div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 300, lineHeight: 1, color: 'var(--ink)' }}>{value}</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--mist)', marginTop: '0.15rem', letterSpacing: '0.04em' }}>{label}</div>
+              </div>
+            </div>
+          </Link>
         ))}
       </div>
 
-      <div style={{background:'#fff',border:'1px solid rgba(14,77,100,0.1)',borderRadius:'16px',padding:'1.5rem'}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1rem'}}>
-          <h2 style={{fontSize:'1.1rem',fontWeight:700,color:'#1F2933'}}>Recent enquiries</h2>
-          <Link href="/admin/enquiries" style={{fontSize:'0.82rem',fontWeight:600,color:'#0E4D64',border:'1.5px solid #0E4D64',borderRadius:'999px',padding:'0.4rem 0.85rem'}}>View all</Link>
-        </div>
-        {recentEnquiries.length === 0 ? (
-          <p style={{color:'#4a5a63',fontSize:'0.9rem'}}>No enquiries yet.</p>
-        ) : (
-          <div style={{display:'grid',gap:'0.75rem'}}>
-            {recentEnquiries.map((e) => (
-              <Link key={e.id} href={`/admin/enquiries/${e.id}`} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'0.85rem 1rem',background:'#f7f5f0',borderRadius:'12px',border:'1px solid rgba(14,77,100,0.08)'}}>
+      {/* Pending reviews alert */}
+      {pendingReviews > 0 && (
+        <Link href="/admin/reviews" style={{ textDecoration: 'none' }}>
+          <div className="notice warn" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Star size={16} style={{ flexShrink: 0 }} />
+            <span><strong>{pendingReviews}</strong> review{pendingReviews > 1 ? 's' : ''} waiting for approval</span>
+            <span style={{ marginLeft: 'auto', fontSize: '0.78rem' }}>Review →</span>
+          </div>
+        </Link>
+      )}
+
+      <div className="grid-2 align-start">
+        {/* Recent enquiries */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3>Recent enquiries</h3>
+            <Link href="/admin/enquiries" style={{ fontSize: '0.78rem', color: 'var(--sienna)' }}>See all →</Link>
+          </div>
+          <div style={{ display: 'grid', gap: '0.6rem' }}>
+            {recentEnquiries.length === 0 ? (
+              <div className="empty-state">No enquiries yet.</div>
+            ) : recentEnquiries.map(enq => (
+              <div key={enq.id} className="panel" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{fontWeight:600,fontSize:'0.9rem',color:'#1F2933'}}>{e.fullName}</div>
-                  <div style={{fontSize:'0.78rem',color:'#4a5a63'}}>{e.email}</div>
+                  <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{enq.fullName}</div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--mist)' }}>
+                    {enq.nationality ?? 'Unknown'} · {enq.groupSize ? `${enq.groupSize} pax` : '—'} · {enq.budgetRange ?? '—'}
+                  </div>
                 </div>
-                <span style={{fontSize:'0.72rem',fontWeight:600,padding:'0.25rem 0.65rem',borderRadius:'999px',background:'rgba(14,77,100,0.08)',color:'#0E4D64'}}>{e.status}</span>
-              </Link>
+                <div style={{ textAlign: 'right' }}>
+                  <span className="status" style={{
+                    background: enq.status === 'New' ? 'rgba(196,120,74,0.1)' : 'rgba(61,107,90,0.1)',
+                    color: enq.status === 'New' ? 'var(--sienna)' : 'var(--jade)',
+                  }}>{enq.status}</span>
+                  <div style={{ fontSize: '0.66rem', color: 'rgba(13,31,45,0.3)', marginTop: '0.25rem' }}>
+                    {new Date(enq.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
-        )}
+        </div>
+
+        {/* Funnel */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3>Funnel (30 days)</h3>
+            <span style={{ fontSize: '0.72rem', color: 'var(--mist)' }}>Conversion</span>
+          </div>
+          <div className="panel" style={{ padding: '1.25rem', display: 'grid', gap: '0.65rem' }}>
+            {funnelSteps.map((step, i) => {
+              const prev = i > 0 ? funnelSteps[i - 1].count : null;
+              const rate = prev && prev > 0 ? Math.round((step.count / prev) * 100) : null;
+              const width = maxCount > 0 ? (step.count / maxCount) * 100 : 0;
+              const isBottom = step.step === 'Completed booking';
+              return (
+                <div key={step.step} style={{ display: 'grid', gap: '0.3rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem' }}>
+                    <span style={{ color: isBottom ? 'var(--jade)' : 'var(--ink)', fontWeight: isBottom ? 700 : 400 }}>{step.step}</span>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                      {rate !== null && <span style={{ color: 'var(--jade)', fontWeight: 600, fontSize: '0.7rem' }}>{rate}%</span>}
+                      <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem', color: isBottom ? 'var(--jade)' : 'var(--ink)', fontWeight: 400 }}>{step.count.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <div style={{ height: 5, background: 'rgba(13,31,45,0.07)', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${width}%`, background: isBottom ? 'var(--jade)' : 'var(--sienna)', borderRadius: 999, transition: 'width 600ms ease' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.85rem' }}>
+            <Link href="/admin/availability" className="btn btn-outline btn-sm" style={{ flex: 1, justifyContent: 'center' }}>
+              <Calendar size={13} />Availability
+            </Link>
+            <Link href="/admin/reviews" className="btn btn-outline btn-sm" style={{ flex: 1, justifyContent: 'center' }}>
+              <Star size={13} />Reviews
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -16,26 +16,26 @@ export default async function EditTourPage({ params }: { params: Promise<{ id: s
       <div className="panel">
         <form action={`/api/admin/tours/${tour.id}`} method="post" className="stack-form">
           <div className="field-grid">
-            <label><span>Title</span><input name="title" defaultValue={tour.title} required /></label>
-            <label><span>Slug</span><input name="slug" defaultValue={tour.slug} required /></label>
-            <label><span>Category</span><input name="category" defaultValue={tour.category} required /></label>
-            <label><span>Duration type</span><input name="durationType" defaultValue={tour.durationType} required /></label>
-            <label><span>Price from</span><input name="priceFrom" type="number" step="0.01" defaultValue={Number(tour.priceFrom)} required /></label>
-            <label><span>Image URL</span><input name="imageUrl" defaultValue={tour.imageUrl ?? ''} /></label>
+            <label><span className="field-label">Title</span><input name="title" defaultValue={tour.title} required /></label>
+            <label><span className="field-label">Slug</span><input name="slug" defaultValue={tour.slug} required /></label>
+            <label><span className="field-label">Category</span><input name="category" defaultValue={tour.category} required /></label>
+            <label><span className="field-label">Duration type</span><input name="durationType" defaultValue={tour.durationType} required /></label>
+            <label><span className="field-label">Price from</span><input name="priceFrom" type="number" step="0.01" defaultValue={Number(tour.priceFrom)} required /></label>
+            <label><span className="field-label">Image URL</span><input name="imageUrl" defaultValue={tour.imageUrl ?? ''} /></label>
           </div>
-          <label><span>Summary</span><textarea name="summary" rows={3} defaultValue={tour.summary} required /></label>
-          <label><span>Description</span><textarea name="description" rows={6} defaultValue={tour.description} required /></label>
-          <label><span>Highlights</span><input name="highlights" defaultValue={highlights.join(', ')} /></label>
+          <label><span className="field-label">Summary</span><textarea name="summary" rows={3} defaultValue={tour.summary} required /></label>
+          <label><span className="field-label">Description</span><textarea name="description" rows={6} defaultValue={tour.description} required /></label>
+          <label><span className="field-label">Highlights</span><input name="highlights" defaultValue={highlights.join(', ')} /></label>
           <div className="field-grid">
             <label>
-              <span>Featured</span>
+              <span className="field-label">Featured</span>
               <select name="isFeatured" defaultValue={String(tour.isFeatured)}>
                 <option value="false">No</option>
                 <option value="true">Yes</option>
               </select>
             </label>
             <label>
-              <span>Private</span>
+              <span className="field-label">Private</span>
               <select name="isPrivate" defaultValue={String(tour.isPrivate)}>
                 <option value="true">Yes</option>
                 <option value="false">No</option>
@@ -44,14 +44,14 @@ export default async function EditTourPage({ params }: { params: Promise<{ id: s
           </div>
           <div className="field-grid">
             <label>
-              <span>Active</span>
+              <span className="field-label">Active</span>
               <select name="isActive" defaultValue={String(tour.isActive)}>
                 <option value="true">Yes</option>
                 <option value="false">No</option>
               </select>
             </label>
           </div>
-          <button className="button">Save changes</button>
+          <button className="btn btn-ink">Save changes</button>
         </form>
       </div>
     </div>

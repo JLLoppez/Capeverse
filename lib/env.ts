@@ -14,9 +14,12 @@ type EnvVar = {
 const ENV_VARS: EnvVar[] = [
   { key: 'DATABASE_URL',           required: true,  description: 'PostgreSQL connection string' },
   { key: 'ADMIN_SESSION_SECRET',   required: true,  description: 'Min 32-char secret for admin sessions' },
+  { key: 'ADMIN_EMAIL',            required: false, description: 'Fallback admin email (superseded by /api/admin/setup)' },
+  { key: 'ADMIN_PASSWORD',         required: false, description: 'Fallback admin password (superseded by /api/admin/setup)' },
   { key: 'GEMINI_API_KEY',         required: false, description: 'Gemini key — AI features disabled without it' },
   { key: 'OWM_API_KEY',            required: false, description: 'OpenWeatherMap key — WeatherWidget disabled without it' },
   { key: 'STRIPE_SECRET_KEY',      required: false, description: 'Stripe secret — bookings disabled without it' },
+  { key: 'STRIPE_WEBHOOK_SECRET',  required: false, description: 'Stripe webhook secret — webhook events NOT verified without this (security risk)' },
   { key: 'CRON_SECRET',            required: false, description: 'Protects /api/cron/* endpoints' },
   { key: 'NEXT_PUBLIC_BASE_URL',   required: false, description: 'Full domain for review email links' },
   { key: 'SMTP_HOST',              required: false, description: 'SMTP config — emails disabled without it' },

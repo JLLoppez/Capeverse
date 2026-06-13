@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://capeverse.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://capeverse.vercel.app';
 
   const [tours, attractions] = await Promise.all([
     prisma.tour.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }),
