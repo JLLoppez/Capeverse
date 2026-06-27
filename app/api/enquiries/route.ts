@@ -8,8 +8,18 @@ import {
 } from '@/lib/mail';
 import { EnquirySchema } from '@/lib/schemas';
 import { ZodError } from 'zod';
+import { rateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(request: Request) {
+  // Rate limit: 10 enquiries per IP per hour — prevents inbox flooding
+  const limited = rateLimitResponse(request, 'enquiry');
+  if (limited) {
+    return NextResponse.redirect(
+      new URL('/enquiry?error=Too+many+requests.+Please+wait+a+few+minutes+before+trying+again.', request.url),
+      303
+    );
+  }
+
   const formData = await request.formData();
 
   const raw = {

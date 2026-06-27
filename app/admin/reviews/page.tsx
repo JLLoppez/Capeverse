@@ -56,9 +56,18 @@ export default async function AdminReviewsPage() {
                     <button type="submit" className="btn btn-ink btn-sm">✓ Approve</button>
                   </form>
                 </div>
-                <p style={{ fontSize: '0.88rem', lineHeight: 1.7, color: 'rgba(13,31,45,0.7)', fontStyle: 'italic', fontFamily: 'var(--font-display)', fontSize: '0.95rem', fontWeight: 300 }}>
-                  "{review.body}"
-                </p>
+                <p
+  style={{
+    fontSize: '0.95rem',
+    lineHeight: 1.7,
+    color: 'rgba(13,31,45,0.7)',
+    fontStyle: 'italic',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 300,
+  }}
+>
+  "{review.body}"
+</p>
                 <p className="muted" style={{ fontSize: '0.72rem', marginTop: '0.65rem' }}>
                   Submitted {review.submittedAt ? new Date(review.submittedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                 </p>

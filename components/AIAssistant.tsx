@@ -13,9 +13,9 @@ type ItineraryHint = {
 };
 
 const STARTERS = [
-  'We're a couple visiting for 3 days — we love scenic drives and wine tasting.',
-  'Family of 4 with young kids, looking for wildlife and relaxed city highlights.',
-  'Solo traveller, luxury budget, first time in Cape Town, want the iconic highlights.',
+  "We're a couple visiting for 3 days — we love scenic drives and wine tasting.",
+  "Family of 4 with young kids, looking for wildlife and relaxed city highlights.",
+  "Solo traveller, luxury budget, first time in Cape Town, want the iconic highlights.",
 ];
 
 function trackFunnel(event: string, meta?: Record<string, unknown>) {

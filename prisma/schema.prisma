@@ -8,24 +8,25 @@ datasource db {
 }
 
 model Tour {
-  id           String     @id @default(cuid())
-  title        String
-  slug         String     @unique
-  summary      String
-  description  String
-  durationType String
-  priceFrom    Decimal
-  category     String
-  isPrivate    Boolean    @default(true)
-  isFeatured   Boolean    @default(false)
-  isActive     Boolean    @default(true)
-  highlights   Json
-  imageUrl     String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  stops        TourStop[]
-  bookings     Booking[]
-  reviews      Review[]
+  id               String             @id @default(cuid())
+  title            String
+  slug             String             @unique
+  summary          String
+  description      String
+  durationType     String
+  priceFrom        Decimal
+  category         String
+  isPrivate        Boolean            @default(true)
+  isFeatured       Boolean            @default(false)
+  isActive         Boolean            @default(true)
+  highlights       Json
+  imageUrl         String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  bookings         Booking[]
+  TourAvailability TourAvailability[]
+  stops            TourStop[]
+  reviews          Review[]
 }
 
 model Attraction {
@@ -60,29 +61,32 @@ model TourStop {
 }
 
 model Enquiry {
-  id                String    @id @default(cuid())
-  fullName          String
-  email             String
-  phone             String?
-  nationality       String?
-  travelDate        DateTime?
-  groupSize         Int?
-  budgetRange       String?
-  message           String?
-  source            String    @default("website")
-  status            String    @default("New")
-  tripLengthDays    Int?
-  travelStyle       String?
-  pace              String?
-  interests         Json?
-  mustSee           Json?
-  accommodationArea String?
-  aiSummary         String?
-  itineraryJson     Json?
-  itineraryToken    String?   // links back to a SavedItinerary
-  consultantNotes   String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  fullName             String
+  email                String
+  phone                String?
+  nationality          String?
+  travelDate           DateTime?
+  groupSize            Int?
+  budgetRange          String?
+  message              String?
+  source               String    @default("website")
+  status               String    @default("New")
+  tripLengthDays       Int?
+  travelStyle          String?
+  pace                 String?
+  interests            Json?
+  mustSee              Json?
+  accommodationArea    String?
+  aiSummary            String?
+  itineraryJson        Json?
+  consultantNotes      String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  aiChatSummary        String?
+  convertedToBookingId String?
+  followUpDate         DateTime?
+  followUpNote         String?
 }
 
 model AdminSetup {
@@ -93,6 +97,7 @@ model AdminSetup {
   createdAt    DateTime @default(now())
 }
 
+// Fix 1+2: Added reviewRequested field and Review relation
 model Booking {
   id              String    @id @default(cuid())
   tourId          String
@@ -103,11 +108,11 @@ model Booking {
   groupSize       Int
   amountZar       Int
   status          String    @default("Confirmed")
+  reviewRequested Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   tour            Tour      @relation(fields: [tourId], references: [id])
-  reviewRequested Boolean   @default(false)
-  reviews         Review[]
+  review          Review?
 }
 
 model PageView {
@@ -120,66 +125,73 @@ model PageView {
   @@index([createdAt])
 }
 
-// ── New: saved itinerary with share token ────────────────────────────────────
-model SavedItinerary {
-  id             String   @id @default(cuid())
-  token          String   @unique @default(cuid())
-  itineraryJson  Json     // full result from /api/itinerary/generate
-  inputJson      Json     // the original PlannerInput so it can be re-run
-  days           Int
-  budget         String
-  pace           String
-  groupType      String
-  interests      Json     // string[]
-  createdAt      DateTime @default(now())
-  expiresAt      DateTime // 90 days from creation
+model TourAvailability {
+  id          String   @id
+  tourId      String
+  blockedDate DateTime @db.Date
+  reason      String?
+  maxCapacity Int?
+  createdAt   DateTime @default(now())
+  Tour        Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
 
-  @@index([token])
-  @@index([createdAt])
+  @@unique([tourId, blockedDate])
+  @@index([blockedDate])
+  @@index([tourId])
 }
 
-// ── New: post-booking review ─────────────────────────────────────────────────
+// Fix 1: Added OperatorAvailability model used by availability routes
+model OperatorAvailability {
+  id         String   @id @default(cuid())
+  date       DateTime @unique @db.Date
+  maxGroups  Int      @default(0)
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([date])
+}
+
+// Fix 2: Added bookingId relation; rating/body/authorName nullable for pending reviews
 model Review {
-  id          String   @id @default(cuid())
-  tourId      String
-  bookingId   String?  // optional — link back to the booking
-  booking     Booking? @relation(fields: [bookingId], references: [id])
-  reviewToken String   @unique @default(cuid()) // emailed to customer
-  rating      Int?     // 1-5, null until submitted
+  id          String    @id @default(cuid())
+  token       String    @unique
+  rating      Int?
   body        String?
   authorName  String?
-  approved    Boolean  @default(false)
+  approved    Boolean   @default(false)
   submittedAt DateTime?
-  createdAt   DateTime @default(now())
-  tour        Tour     @relation(fields: [tourId], references: [id])
+
+  tourId      String
+  tour        Tour      @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  bookingId   String?   @unique
+  booking     Booking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime  @default(now())
 
   @@index([tourId])
-  @@index([reviewToken])
 }
 
-// ── New: funnel event tracking ───────────────────────────────────────────────
 model FunnelEvent {
   id        String   @id @default(cuid())
-  event     String   // viewed_tour | started_planner | generated_itinerary | saved_itinerary | submitted_enquiry | completed_booking
-  sessionId String?
-  tourId    String?
-  path      String?
+  event     String
   meta      Json?
   createdAt DateTime @default(now())
 
   @@index([event])
-  @@index([sessionId])
   @@index([createdAt])
 }
 
-// ── Operator availability: blocked dates and capacity limits ─────────────────
-model OperatorAvailability {
-  id        String   @id @default(cuid())
-  date      DateTime @db.Date
-  maxGroups Int      @default(0)  // 0 = fully blocked
-  note      String?
-  createdAt DateTime @default(now())
-
-  @@unique([date])
-  @@index([date])
+model SavedItinerary {
+  id            String   @id @default(cuid())
+  token         String   @unique
+  itineraryJson Json
+  inputJson     Json?
+  days          Int
+  budget        String?
+  pace          String?
+  groupType     String?
+  interests     Json?
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime
 }

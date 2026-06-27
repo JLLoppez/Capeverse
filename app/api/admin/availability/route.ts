@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { isAdminAuthenticated } from '@/lib/auth';
 import { z } from 'zod';
 
 const BlockSchema = z.object({
@@ -8,7 +9,12 @@ const BlockSchema = z.object({
   note:      z.string().max(200).optional(),
 });
 
-export async function GET() {
+// Fix 4: All three methods now require admin authentication
+export async function GET(request: Request) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const from = new Date();
   const to   = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
   const rows = await prisma.operatorAvailability.findMany({
@@ -19,6 +25,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   let body: unknown;
   try { body = await request.json(); }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
@@ -39,6 +49,10 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const date = new URL(request.url).searchParams.get('date');
   if (!date) return NextResponse.json({ error: 'Missing date' }, { status: 400 });
 

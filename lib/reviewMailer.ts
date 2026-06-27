@@ -23,7 +23,7 @@ export async function requestReviewForBooking(bookingId: string): Promise<void> 
   });
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://capeverse.co.za';
-  const reviewUrl = `${baseUrl}/review/${review.reviewToken}`;
+  const reviewUrl = `${baseUrl}/review/${review.token}`;
 
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:540px;margin:0 auto;color:#1F2933;">

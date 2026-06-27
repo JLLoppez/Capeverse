@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   catch { return NextResponse.json({ error: 'Invalid review data' }, { status: 422 }); }
 
   const review = await prisma.review.findUnique({
-    where: { reviewToken: parsed.token },
+    where: { token: parsed.token },
   });
 
   if (!review) return NextResponse.json({ error: 'Invalid review link' }, { status: 404 });

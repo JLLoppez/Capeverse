@@ -14,12 +14,16 @@ export async function register() {
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {
-    const { default: Sentry } = await import('@sentry/nextjs');
-    Sentry.init({
-      dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-      environment: process.env.NODE_ENV,
-      tracesSampleRate: 0,
-      enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
-    });
-  }
+  const mod = await import('@sentry/nextjs');
+  const Sentry = mod?.default ?? mod;
+
+   if (Sentry?.init) {
+     Sentry.init({
+       dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+       environment: process.env.NODE_ENV,
+       tracesSampleRate: 0,
+       enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
+     });
+   }
+ }
 }

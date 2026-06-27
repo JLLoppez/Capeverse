@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       category: String(formData.get('category') || ''),
       priceFrom: String(formData.get('priceFrom') || '0'),
       imageUrl: String(formData.get('imageUrl') || '') || null,
-      highlights: JSON.stringify(String(formData.get('highlights') || '').split(',').map((item) => item.trim()).filter(Boolean)),
+      highlights: String(formData.get('highlights') || '').split(',').map((item) => item.trim()).filter(Boolean),
       isFeatured: toBool(formData.get('isFeatured')),
       isPrivate: toBool(formData.get('isPrivate')),
       isActive: true
