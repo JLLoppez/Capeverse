@@ -10,7 +10,7 @@ export default async function AdminToursPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h1 style={{ marginBottom: '0.2rem' }}>Tours</h1>
-          <p className="muted" style={{ fontSize: '0.84rem', fontWeight: 300 }}>{tours.length} total</p>
+          <p className="muted" style={{ fontSize: '0.84rem', fontWeight: 400 }}>{tours.length} total</p>
         </div>
         <Link href="/admin/tours/new" className="btn btn-ink btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           <Plus size={14} />New tour

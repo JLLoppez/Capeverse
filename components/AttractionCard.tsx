@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { FavoriteButton } from './FavoriteButton';
 
 type Attraction = {
   id: string; name: string; slug: string; region: string;
@@ -20,6 +21,9 @@ export function AttractionCard({ attraction }: { attraction: Attraction }) {
             </div>
           )}
           <span className="card-region-badge">{attraction.region}</span>
+          <FavoriteButton
+            item={{ type: 'attraction', id: attraction.id, title: attraction.name, slug: attraction.slug, image: attraction.imageUrl, subtitle: attraction.shortDescription }}
+          />
         </div>
         <div className="card-body">
           <div className="card-title" style={{ fontSize: '1.1rem' }}>{attraction.name}</div>

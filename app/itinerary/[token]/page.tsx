@@ -137,9 +137,9 @@ export default async function SharedItineraryPage({
 
           <p
             style={{
-              color: 'rgba(255,255,255,0.6)',
+              color: 'rgba(255,255,255,0.65)',
               maxWidth: 560,
-              fontWeight: 300,
+              fontWeight: 400,
               lineHeight: 1.8,
             }}
           >
@@ -258,9 +258,9 @@ export default async function SharedItineraryPage({
                         <p
                           style={{
                             fontSize: '0.8rem',
-                            color: 'rgba(13,31,45,0.45)',
+                            color: 'rgba(13,31,45,0.5)',
                             margin: '0.2rem 0 0',
-                            fontWeight: 300,
+                            fontWeight: 400,
                           }}
                         >
                           {stop.reason}
@@ -309,10 +309,10 @@ export default async function SharedItineraryPage({
 
               <p
                 style={{
-                  color: 'rgba(255,255,255,0.5)',
+                  color: 'rgba(255,255,255,0.6)',
                   margin: 0,
                   fontSize: '0.86rem',
-                  fontWeight: 300,
+                  fontWeight: 400,
                 }}
               >
                 Send this plan to a consultant — we'll refine the timing and get

@@ -48,7 +48,7 @@ export default function AdminAvailabilityPage() {
     <div style={{ display: 'grid', gap: '2rem' }}>
       <div>
         <h1 style={{ marginBottom: '0.3rem' }}>Availability calendar</h1>
-        <p className="muted" style={{ fontWeight: 300, fontSize: '0.85rem' }}>
+        <p className="muted" style={{ fontWeight: 400, fontSize: '0.85rem' }}>
           Block dates or limit capacity. Blocked dates are hidden from the public booking form.
         </p>
       </div>

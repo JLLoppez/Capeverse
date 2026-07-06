@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { TourCard } from '@/components/TourCard';
 import { AttractionCard } from '@/components/AttractionCard';
+import { EventCard } from '@/components/EventCard';
+import { getUpcomingEvents } from '@/lib/events';
+import { Sparkles, ShieldCheck, Lock, Globe2, MapPin, Bot, CalendarDays, Ticket } from 'lucide-react';
 
 export default async function HomePage() {
   // Graceful fallback — DB unavailable should never crash the homepage
@@ -17,26 +20,28 @@ export default async function HomePage() {
     console.error('[homepage] DB fetch failed:', err);
   }
 
+  const upcomingEvents = getUpcomingEvents().slice(0, 3);
+
   return (
     <>
       {/* ── HERO ────────────────────────────────────────────── */}
       <section className="hero-split">
         <div className="hero-left">
-          <div className="hero-coord-label reveal">34°02′S 18°25′E · Cape Town, South Africa</div>
+          <div className="hero-coord-label reveal">CAPEVERSE · ONE PLACE. EVERY EXPERIENCE.</div>
           <h1 className="hero-h1 reveal d1">
-            Cape Town,<br /><em style={{ color: 'var(--sienna-lt)', fontStyle: 'italic' }}>differently.</em>
+            Your AI travel<br /><em style={{ color: 'var(--sienna-lt)', fontStyle: 'normal' }}>companion</em><br />for Cape Town
           </h1>
           <p className="hero-sub reveal d2">
-            Private tours, AI itinerary planning, and a real consultant ready to turn your ideas into a polished trip.
+            Discover. Plan. Book. Experience. Everything you need for the perfect trip — all in one intelligent platform.
           </p>
           <div className="hero-actions reveal d3">
-            <Link href="/tours" className="btn btn-primary btn-lg">Explore tours</Link>
-            <Link href="/plan-trip" className="btn btn-ghost">Build itinerary</Link>
+            <Link href="/plan-trip" className="btn btn-primary btn-lg">Plan my trip</Link>
+            <Link href="/tours" className="btn btn-ghost">Explore tours</Link>
           </div>
           <div className="hero-stat-row reveal d4">
-            <div className="hero-stat"><strong>Private</strong><span>Tour design</span></div>
-            <div className="hero-stat"><strong>AI + Human</strong><span>Planning flow</span></div>
-            <div className="hero-stat"><strong>90 days</strong><span>Saved links</span></div>
+            <div className="hero-stat"><strong>AI-Powered</strong><span>Smart itineraries</span></div>
+            <div className="hero-stat"><strong>Secure</strong><span>Bookings</span></div>
+            <div className="hero-stat"><strong>4 languages</strong><span>Supported</span></div>
           </div>
         </div>
         <div className="hero-right">
@@ -48,26 +53,55 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── STATS BAR ───────────────────────────────────────── */}
+      {/* ── TRUST BADGES ────────────────────────────────────── */}
       <div className="stats-bar">
         <div className="container">
-          <div className="stats-row">
+          <div className="feature-badge-row">
             {[
-              { value: 'Private-first', label: 'Tour design style' },
-              { value: 'AI + Human',    label: 'Planning workflow' },
-              { value: 'Cape Town',     label: 'Destination focus' },
-              { value: 'Full stack',    label: 'Platform included' },
-            ].map(item => (
-              <div key={item.label} className="stat-item">
-                <div>
-                  <div className="stat-value">{item.value}</div>
-                  <div className="stat-label">{item.label}</div>
-                </div>
+              { icon: Sparkles,    title: 'AI Powered',      desc: 'Smart itineraries and recommendations just for you.' },
+              { icon: ShieldCheck, title: 'Trusted & Curated', desc: 'Handpicked experiences you can trust.' },
+              { icon: Lock,        title: 'Secure Bookings',  desc: 'Book tours and experiences with confidence.' },
+              { icon: Globe2,      title: 'Multi-Language',   desc: 'English, Deutsch, Français, Nederlands and more.' },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="feature-badge">
+                <div className="icon-circle"><Icon size={22} /></div>
+                <h4>{title}</h4>
+                <p>{desc}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* ── EVERYTHING YOU NEED ─────────────────────────────── */}
+      <section className="section" style={{ background: 'var(--salt-warm)' }}>
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+            <div className="section-eyebrow" style={{ justifyContent: 'center' }}>The platform</div>
+            <h2 style={{ marginTop: '0.75rem' }}>Everything you need for an <em>unforgettable trip</em></h2>
+          </div>
+          <div className="feature-grid-5">
+            {[
+              { icon: MapPin,       title: 'Discover Amazing Places', desc: 'Browse Cape Town\'s top attractions.', href: '/attractions' },
+              { icon: Bot,          title: 'AI Trip Planner',         desc: 'Get a custom day-by-day itinerary.', href: '/plan-trip' },
+              { icon: CalendarDays, title: 'Find Events Near You',    desc: 'Festivals, markets and local happenings.', href: '/events' },
+              { icon: Ticket,       title: 'Book Experiences',        desc: 'Reserve tours and activities securely.', href: '/tours' },
+              { icon: Sparkles,     title: 'AI Travel Assistant',     desc: 'Ask anything about your trip, anytime.', href: '/ai-assistant' },
+            ].map(({ icon: Icon, title, desc, href }) => (
+              <Link key={title} href={href} style={{ textDecoration: 'none' }}>
+                <div className="feature-tile">
+                  <div className="icon-circle"><Icon size={19} /></div>
+                  <div>
+                    <h4>{title}</h4>
+                    <p>{desc}</p>
+                  </div>
+                  <span className="tile-link">Explore →</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ── FEATURED TOURS ──────────────────────────────────── */}
       {featuredTours.length > 0 && (
@@ -105,6 +139,22 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* ── UPCOMING EVENTS ─────────────────────────────────── */}
+      <section className="section">
+        <div className="container">
+          <div className="section-header">
+            <div>
+              <div className="section-eyebrow">What's on</div>
+              <h2>Events happening <em>near you</em></h2>
+            </div>
+            <Link href="/events">See all events →</Link>
+          </div>
+          <div className="grid-3">
+            {upcomingEvents.map(event => <EventCard key={event.id} event={event} />)}
+          </div>
+        </div>
+      </section>
+
       {/* ── HOW IT WORKS ────────────────────────────────────── */}
       <section className="section">
         <div className="container">
@@ -121,7 +171,7 @@ export default async function HomePage() {
               <div key={item.step} className="panel">
                 <div style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.1em', color: 'var(--sienna)', marginBottom: '0.85rem' }}>{item.step}</div>
                 <h3 style={{ marginBottom: '0.65rem' }}>{item.title}</h3>
-                <p style={{ color: 'rgba(13,31,45,0.55)', fontSize: '0.88rem', fontWeight: 300 }}>{item.desc}</p>
+                <p style={{ color: 'rgba(13,31,45,0.55)', fontSize: '0.88rem', fontWeight: 400 }}>{item.desc}</p>
               </div>
             ))}
           </div>
@@ -137,7 +187,7 @@ export default async function HomePage() {
               <h2 style={{ color: 'var(--salt)', marginTop: '0.65rem', marginBottom: '1rem' }}>
                 Guide uncertain travellers toward the <em style={{ color: 'var(--sienna-lt)' }}>best-fit experience</em>.
               </h2>
-              <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '2rem', fontWeight: 300, lineHeight: 1.8 }}>
+              <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '2rem', fontWeight: 400, lineHeight: 1.8 }}>
                 The AI assistant asks simple questions around trip length, interests, and pace, then builds a geographically-smart itinerary — or routes to a consultant when the request gets more custom.
               </p>
               <Link href="/ai-assistant" className="btn btn-primary">Try the assistant</Link>
@@ -148,7 +198,7 @@ export default async function HomePage() {
                 { quote: 'We captured the lead, the AI summary, and the client preferences in one place. Follow-up is effortless now.', author: 'Operations Team Demo' },
               ].map(item => (
                 <div key={item.author} className="glass-card">
-                  <p style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 300, fontStyle: 'italic', color: 'rgba(255,255,255,0.75)', lineHeight: 1.7, marginBottom: '0.75rem' }}>
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '1rem', fontWeight: 500, fontStyle: 'italic', color: 'rgba(255,255,255,0.8)', lineHeight: 1.7, marginBottom: '0.75rem' }}>
                     "{item.quote}"
                   </p>
                   <strong style={{ fontSize: '0.66rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{item.author}</strong>
@@ -169,7 +219,7 @@ export default async function HomePage() {
           }}>
             <div>
               <h2 style={{ color: 'var(--salt)', marginBottom: '0.5rem' }}>Ready to take enquiries?</h2>
-              <p style={{ color: 'rgba(255,255,255,0.45)', margin: 0, fontWeight: 300 }}>Start with a live demo or send your first enquiry now.</p>
+              <p style={{ color: 'rgba(255,255,255,0.45)', margin: 0, fontWeight: 400 }}>Start with a live demo or send your first enquiry now.</p>
             </div>
             <Link href="/enquiry" className="btn btn-primary btn-lg">Enquire now →</Link>
           </div>

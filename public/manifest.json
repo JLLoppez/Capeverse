@@ -1,0 +1,15 @@
+{
+  "name": "Capeverse — Your AI Travel Companion for Cape Town",
+  "short_name": "Capeverse",
+  "description": "Discover. Plan. Book. Experience. Everything you need for the perfect Cape Town trip.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0F1F",
+  "theme_color": "#7C3AED",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -45,7 +45,7 @@ export default async function AdminDashboardPage() {
       {/* Header */}
       <div>
         <h1 style={{ marginBottom: '0.3rem' }}>Dashboard</h1>
-        <p className="muted" style={{ fontSize: '0.85rem', fontWeight: 300 }}>Welcome back. Here's what's happening.</p>
+        <p className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>Welcome back. Here's what's happening.</p>
       </div>
 
       {/* Stat cards */}
@@ -60,7 +60,7 @@ export default async function AdminDashboardPage() {
                 <Icon size={20} style={{ color: accent }} />
               </div>
               <div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 300, lineHeight: 1, color: 'var(--ink)' }}>{value}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, lineHeight: 1, color: 'var(--ink)' }}>{value}</div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--mist)', marginTop: '0.15rem', letterSpacing: '0.04em' }}>{label}</div>
               </div>
             </div>
@@ -129,7 +129,7 @@ export default async function AdminDashboardPage() {
                     <span style={{ color: isBottom ? 'var(--jade)' : 'var(--ink)', fontWeight: isBottom ? 700 : 400 }}>{step.step}</span>
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                       {rate !== null && <span style={{ color: 'var(--jade)', fontWeight: 600, fontSize: '0.7rem' }}>{rate}%</span>}
-                      <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem', color: isBottom ? 'var(--jade)' : 'var(--ink)', fontWeight: 400 }}>{step.count.toLocaleString()}</span>
+                      <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem', color: isBottom ? 'var(--jade)' : 'var(--ink)', fontWeight: 600 }}>{step.count.toLocaleString()}</span>
                     </div>
                   </div>
                   <div style={{ height: 5, background: 'rgba(13,31,45,0.07)', borderRadius: 999, overflow: 'hidden' }}>

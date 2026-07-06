@@ -18,7 +18,7 @@ export default async function AdminEnquiriesPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h1 style={{ marginBottom: '0.3rem' }}>Enquiries</h1>
-          <p className="muted" style={{ fontSize: '0.84rem', fontWeight: 300 }}>
+          <p className="muted" style={{ fontSize: '0.84rem', fontWeight: 400 }}>
             {enquiries.length} total · <span style={{ color: 'var(--sienna)', fontWeight: 600 }}>{newCount} new</span>
           </p>
         </div>

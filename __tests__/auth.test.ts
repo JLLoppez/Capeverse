@@ -67,7 +67,7 @@ describe('verifyAdminToken — tampered tokens', () => {
   });
   test('rejects tampered signature', () => {
     const [payload] = createAdminToken().split('.');
-    expect(verifyAdminToken(`${payload}.invalidsignaturestring`)).toBe(false));
+    expect(verifyAdminToken(`${payload}.invalidsignaturestring`)).toBe(false);
   });
   test('rejects wrong scope: superadmin', () => {
     const payload = Buffer.from(JSON.stringify({ exp: Date.now() + 9999999, scope: 'superadmin' })).toString('base64url');

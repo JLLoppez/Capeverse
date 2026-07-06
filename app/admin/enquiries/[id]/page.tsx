@@ -31,7 +31,7 @@ export default async function AdminEnquiryDetailPage({
 
       <div>
         <h1 style={{ marginBottom: '0.2rem' }}>{enquiry.fullName}</h1>
-        <p className="muted" style={{ fontWeight: 300 }}>{enquiry.email} · Received {new Date(enquiry.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <p className="muted" style={{ fontWeight: 400 }}>{enquiry.email} · Received {new Date(enquiry.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
       </div>
 
       <div className="grid-two">
@@ -74,7 +74,7 @@ export default async function AdminEnquiryDetailPage({
             {enquiry.message && (
               <div style={{ paddingTop: '0.5rem' }}>
                 <div style={{ fontSize: '0.78rem', color: 'rgba(13,31,45,0.45)', fontWeight: 500, marginBottom: '0.5rem' }}>Message</div>
-                <p style={{ fontSize: '0.85rem', lineHeight: 1.75, color: 'rgba(13,31,45,0.7)', fontWeight: 300 }}>{enquiry.message}</p>
+                <p style={{ fontSize: '0.85rem', lineHeight: 1.75, color: 'rgba(13,31,45,0.7)', fontWeight: 400 }}>{enquiry.message}</p>
               </div>
             )}
           </div>
@@ -86,7 +86,7 @@ export default async function AdminEnquiryDetailPage({
           {enquiry.aiSummary && (
             <div style={{ padding: '0.85rem', background: 'var(--sienna-pale)', borderRadius: 'var(--r)', marginBottom: '0.25rem' }}>
               <div style={{ fontSize: '0.62rem', fontWeight: 700, color: 'var(--sienna)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>AI summary</div>
-              <p style={{ fontSize: '0.84rem', fontWeight: 300, lineHeight: 1.7 }}>{enquiry.aiSummary}</p>
+              <p style={{ fontSize: '0.84rem', fontWeight: 400, lineHeight: 1.7 }}>{enquiry.aiSummary}</p>
             </div>
           )}
           <form action={`/api/admin/enquiries/${enquiry.id}`} method="post" className="stack-form">

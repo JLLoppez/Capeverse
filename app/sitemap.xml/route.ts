@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { getUpcomingEvents } from '@/lib/events';
 
 export async function GET() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://capeverse.vercel.app';
@@ -12,10 +13,17 @@ export async function GET() {
     { url: '/', priority: '1.0', changefreq: 'weekly' },
     { url: '/tours', priority: '0.9', changefreq: 'weekly' },
     { url: '/attractions', priority: '0.9', changefreq: 'weekly' },
+    { url: '/events', priority: '0.8', changefreq: 'weekly' },
     { url: '/plan-trip', priority: '0.8', changefreq: 'monthly' },
     { url: '/ai-assistant', priority: '0.7', changefreq: 'monthly' },
     { url: '/enquiry', priority: '0.8', changefreq: 'monthly' },
   ];
+
+  const eventEntries = getUpcomingEvents().map((e) => ({
+    url: `/events/${e.slug}`,
+    priority: '0.6',
+    changefreq: 'weekly',
+  }));
 
   const tourEntries = tours.map((t) => ({
     url: `/tours/${t.slug}`,
@@ -31,7 +39,7 @@ export async function GET() {
     lastmod: a.updatedAt.toISOString(),
   }));
 
-  const allEntries = [...staticPages, ...tourEntries, ...attractionEntries];
+  const allEntries = [...staticPages, ...eventEntries, ...tourEntries, ...attractionEntries];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

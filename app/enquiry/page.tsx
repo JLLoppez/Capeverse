@@ -8,7 +8,7 @@ export default async function EnquiryPage() {
         <div className="container narrow">
           <div className="section-eyebrow" style={{ color: 'var(--sienna-lt)', marginBottom: '1rem' }}>Begin your journey</div>
           <h1 style={{ color: 'var(--salt)', marginBottom: '1rem' }}>Talk to a Cape Town specialist</h1>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 300, maxWidth: 480 }}>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400, maxWidth: 480 }}>
             Submit your request and our team will respond within one business day with a tailored proposal.
           </p>
         </div>
@@ -77,7 +77,7 @@ export default async function EnquiryPage() {
               <textarea name="message" rows={5} placeholder="Tell us about your travel style, must-see places, hotel area, and any special requests — wine experiences, family-friendly, luxury vehicle, etc." />
             </label>
             <div className="enquiry-submit-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(13,31,45,0.08)' }}>
-              <p style={{ fontSize: '0.76rem', color: 'var(--mist)', margin: 0, fontWeight: 300 }}>
+              <p style={{ fontSize: '0.76rem', color: 'var(--mist)', margin: 0, fontWeight: 400 }}>
                 Notification emails sent automatically to admin and traveller.
               </p>
               <button type="submit" className="btn btn-primary btn-lg">Send enquiry →</button>

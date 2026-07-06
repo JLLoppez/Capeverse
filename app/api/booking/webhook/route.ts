@@ -54,8 +54,8 @@ export async function POST(request: Request) {
       to: session.customer_email,
       subject: 'Your Cape Town booking is confirmed!',
       html: `
-        <div style="font-family:system-ui,sans-serif;max-width:540px;margin:0 auto;color:#0D1F2D;">
-          <p style="font-size:1.1rem;font-weight:700;color:#0D1F2D;">Booking confirmed ✨</p>
+        <div style="font-family:system-ui,sans-serif;max-width:540px;margin:0 auto;color:#0B0F1F;">
+          <p style="font-size:1.1rem;font-weight:700;color:#7C3AED;">Booking confirmed ✨</p>
           <p>Hi ${customerName},</p>
           <p>Your booking is confirmed. Our team will be in touch within 24 hours to finalise your itinerary details.</p>
           <p style="margin-bottom:0;">Warmly,<br/><strong>The Capeverse Team</strong></p>

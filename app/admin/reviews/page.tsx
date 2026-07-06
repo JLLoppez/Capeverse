@@ -25,7 +25,7 @@ export default async function AdminReviewsPage() {
     <div style={{ display: 'grid', gap: '2.5rem' }}>
       <div>
         <h1 style={{ marginBottom: '0.3rem' }}>Reviews</h1>
-        <p className="muted" style={{ fontWeight: 300, fontSize: '0.85rem' }}>Approve submitted reviews before they appear publicly on tour pages.</p>
+        <p className="muted" style={{ fontWeight: 400, fontSize: '0.85rem' }}>Approve submitted reviews before they appear publicly on tour pages.</p>
       </div>
 
       {/* Pending */}
@@ -62,8 +62,8 @@ export default async function AdminReviewsPage() {
     lineHeight: 1.7,
     color: 'rgba(13,31,45,0.7)',
     fontStyle: 'italic',
-    fontFamily: 'var(--font-display)',
-    fontWeight: 300,
+    fontFamily: 'var(--font-body)',
+    fontWeight: 500,
   }}
 >
   "{review.body}"

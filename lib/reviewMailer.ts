@@ -26,11 +26,11 @@ export async function requestReviewForBooking(bookingId: string): Promise<void> 
   const reviewUrl = `${baseUrl}/review/${review.token}`;
 
   const html = `
-    <div style="font-family:system-ui,sans-serif;max-width:540px;margin:0 auto;color:#1F2933;">
-      <p style="font-size:1.1rem;font-weight:700;color:#0E4D64;">We hope you had an amazing time</p>
+    <div style="font-family:system-ui,sans-serif;max-width:540px;margin:0 auto;color:#0B0F1F;">
+      <p style="font-size:1.1rem;font-weight:700;color:#7C3AED;">We hope you had an amazing time</p>
       <p>Hi ${booking.customerName},</p>
       <p>Thank you for choosing our private Cape Town experience. We'd love to hear how it went — your feedback takes just 2 minutes and helps other travellers plan their perfect trip.</p>
-      <a href="${reviewUrl}" style="display:inline-block;margin:1.25rem 0;padding:0.75rem 1.5rem;background:#F2A65A;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;">
+      <a href="${reviewUrl}" style="display:inline-block;margin:1.25rem 0;padding:0.75rem 1.5rem;background:#7C3AED;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;">
         Leave a review for ${booking.tour.title}
       </a>
       <p style="font-size:0.78rem;color:#6b7a83;">This link is personal to you and expires in 60 days.</p>

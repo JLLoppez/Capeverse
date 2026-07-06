@@ -18,7 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       {/* Topbar */}
       <div style={{ background: 'var(--ink)', color: '#fff', padding: '0.72rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <div className="nav-mark"><span>CV</span></div>
+          <div className="nav-mark"><img src="/brand/logo-icon.svg" alt="Capeverse" width={22} height={22} /></div>
           <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 600, color: 'var(--salt)' }}>
             Capeverse <span style={{ opacity: 0.4, fontSize: '0.78rem', fontFamily: 'var(--font-body)', fontWeight: 400 }}>Admin</span>
           </span>
