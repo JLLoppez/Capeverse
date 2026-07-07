@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { rateLimitResponse } from '@/lib/rateLimit';
 import { z } from 'zod';
 
@@ -29,8 +30,9 @@ export async function POST(request: Request) {
 
   const saved = await prisma.savedItinerary.create({
     data: {
-      itineraryJson: parsed.itineraryJson,
-      inputJson: parsed.inputJson,
+      token: crypto.randomUUID(),
+      itineraryJson: parsed.itineraryJson as Prisma.InputJsonValue,
+      inputJson: parsed.inputJson as Prisma.InputJsonValue,
       days: parsed.days,
       budget: parsed.budget,
       pace: parsed.pace,

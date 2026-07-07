@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
 const FunnelEventSchema = z.object({
@@ -26,6 +27,11 @@ export async function POST(request: Request) {
   try { parsed = FunnelEventSchema.parse(body); }
   catch { return NextResponse.json({ ok: false }, { status: 422 }); }
 
-  await prisma.funnelEvent.create({ data: parsed }).catch(() => {});
+  await prisma.funnelEvent.create({
+    data: {
+      ...parsed,
+      meta: parsed.meta as Prisma.InputJsonValue | undefined,
+    },
+  }).catch(() => {});
   return NextResponse.json({ ok: true });
 }

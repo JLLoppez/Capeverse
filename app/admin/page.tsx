@@ -48,26 +48,65 @@ export default async function AdminDashboardPage() {
         <p className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>Welcome back. Here's what's happening.</p>
       </div>
 
-      {/* Stat cards */}
+           {/* Stat cards */}
       <div className="grid-4 admin-stat-grid">
         {statCards.map(({ label, value, icon: Icon, href, accent }) => (
-          <Link key={label} href={href} style={{ textDecoration: 'none' }}>
-            <div className="panel" style={{ display: 'flex', alignItems: 'center', gap: '1rem', transition: 'box-shadow 200ms, transform 200ms' }}
-              onMouseOver={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = 'var(--shadow)'; el.style.transform = 'translateY(-2px)'; }}
-              onMouseOut={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = ''; el.style.transform = ''; }}
+          <Link
+            key={label}
+            href={href}
+            style={{ textDecoration: 'none' }}
+          >
+            <div
+              className="panel admin-stat-card"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem',
+                transition: 'box-shadow 200ms, transform 200ms',
+              }}
             >
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: `${accent}15`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: `${accent}15`,
+                  display: 'grid',
+                  placeItems: 'center',
+                  flexShrink: 0,
+                }}
+              >
                 <Icon size={20} style={{ color: accent }} />
               </div>
+
               <div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, lineHeight: 1, color: 'var(--ink)' }}>{value}</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--mist)', marginTop: '0.15rem', letterSpacing: '0.04em' }}>{label}</div>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '1.8rem',
+                    fontWeight: 700,
+                    lineHeight: 1,
+                    color: 'var(--ink)',
+                  }}
+                >
+                  {value}
+                </div>
+
+                <div
+                  style={{
+                    fontSize: '0.7rem',
+                    color: 'var(--mist)',
+                    marginTop: '0.15rem',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  {label}
+                </div>
               </div>
             </div>
           </Link>
         ))}
       </div>
-
       {/* Pending reviews alert */}
       {pendingReviews > 0 && (
         <Link href="/admin/reviews" style={{ textDecoration: 'none' }}>

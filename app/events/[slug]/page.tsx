@@ -7,8 +7,9 @@ export function generateStaticParams() {
   return getUpcomingEvents().map(e => ({ slug: e.slug }));
 }
 
-export default function EventDetailPage({ params }: { params: { slug: string } }) {
-  const event = getEventBySlug(params.slug);
+export default async function EventDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const event = getEventBySlug(slug);
   if (!event) return notFound();
 
   const dateLabel = new Date(event.date + 'T00:00:00').toLocaleDateString('en-ZA', {

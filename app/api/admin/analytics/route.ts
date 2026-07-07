@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { isAdminAuthenticated } from '@/lib/auth';
 
 export async function GET() {
@@ -94,7 +95,7 @@ export async function GET() {
 
   // Interest breakdown from enquiries
   const enquiriesWithInterests = await prisma.enquiry.findMany({
-    where: { interests: { not: null }, createdAt: { gte: thirtyDaysAgo } },
+    where: { interests: { not: Prisma.AnyNull }, createdAt: { gte: thirtyDaysAgo } },
     select: { interests: true },
   });
   const interestTally: Record<string, number> = {};

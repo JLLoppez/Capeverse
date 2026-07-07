@@ -13,7 +13,7 @@ export async function requestReviewForBooking(bookingId: string): Promise<void> 
   // ── Atomic: create review + mark booking in one transaction ─────────────
   const review = await prisma.$transaction(async (tx) => {
     const created = await tx.review.create({
-      data: { tourId: booking.tour.id, bookingId: booking.id },
+      data: { token: crypto.randomUUID(), tourId: booking.tour.id, bookingId: booking.id },
     });
     await tx.booking.update({
       where: { id: bookingId },
